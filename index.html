@@ -6,95 +6,149 @@
 <title>Games</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { color-scheme: dark; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: #0f172a; color: #e2e8f0;
-    min-height: 100vh; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; padding: 24px;
+    background: radial-gradient(1200px 600px at 50% -10%, #1e293b 0%, #0f172a 55%, #020617 100%);
+    color: #e2e8f0; min-height: 100vh; padding: 32px 16px 48px;
   }
-  h1 { font-size: 2rem; margin-bottom: 8px; }
-  p.sub { color: #94a3b8; margin-bottom: 32px; }
-  .games { display: flex; flex-direction: column; gap: 16px; width: 100%; max-width: 340px; }
+  .wrap { max-width: 860px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 20px; }
+  header h1 {
+    font-size: 2.4rem; font-weight: 800; letter-spacing: -0.02em;
+    background: linear-gradient(135deg, #38bdf8, #a78bfa);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  header p { color: #94a3b8; margin-top: 6px; font-size: 1rem; }
+  .filters { display: flex; gap: 8px; justify-content: center; margin-bottom: 24px; flex-wrap: wrap; }
+  .filters button {
+    font: inherit; font-size: 0.9rem; font-weight: 600; cursor: pointer;
+    background: #1e293b; color: #94a3b8; border: 1px solid #334155;
+    border-radius: 999px; padding: 8px 18px; transition: all .15s;
+  }
+  .filters button.active {
+    background: linear-gradient(135deg, #0ea5e9, #8b5cf6);
+    color: #fff; border-color: transparent;
+  }
+  .games {
+    display: grid; gap: 14px;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
   a.card {
-    display: block; text-decoration: none; color: inherit;
-    background: #1e293b; border: 1px solid #334155; border-radius: 16px;
-    padding: 24px; text-align: center; transition: transform .12s, border-color .12s;
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+    text-decoration: none; color: inherit;
+    background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(8px);
+    border: 1px solid #334155; border-radius: 18px;
+    padding: 22px 12px 18px; position: relative;
+    transition: transform .15s, border-color .15s, box-shadow .15s;
   }
-  a.card:hover, a.card:active { transform: scale(1.03); border-color: #38bdf8; }
-  .card .icon { font-size: 2.5rem; margin-bottom: 8px; }
-  .card .name { font-size: 1.25rem; font-weight: 600; margin-bottom: 4px; }
-  .card .desc { font-size: .9rem; color: #94a3b8; }
+  a.card:hover, a.card:active {
+    transform: translateY(-4px); border-color: #38bdf8;
+    box-shadow: 0 12px 32px rgba(56, 189, 248, 0.15);
+  }
+  .card .icon { font-size: 2.6rem; margin-bottom: 10px; line-height: 1; }
+  .card .name { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
+  .card .desc { font-size: 0.78rem; color: #94a3b8; line-height: 1.35; }
+  .badge {
+    position: absolute; top: 10px; right: 10px;
+    font-size: 0.65rem; font-weight: 700; letter-spacing: 0.04em;
+    padding: 3px 9px; border-radius: 999px;
+  }
+  .badge.multi { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); }
+  .badge.solo { background: rgba(167, 139, 250, 0.15); color: #a78bfa; border: 1px solid rgba(167, 139, 250, 0.35); }
+  .card.hidden { display: none; }
+  footer { text-align: center; color: #475569; font-size: 0.8rem; margin-top: 36px; }
 </style>
 </head>
 <body>
-  <h1>Games</h1>
-  <p class="sub">Pick one to play</p>
-  <div class="games">
-    <a class="card" href="connect-four/">
-      <div class="icon">🔴</div>
-      <div class="name">Connect Four</div>
-      <div class="desc">Drop discs, connect four, play a friend with an invite code</div>
+<div class="wrap">
+  <header>
+    <h1>🎮 Games</h1>
+    <p>Pick one and play — right in your browser</p>
+  </header>
+  <div class="filters">
+    <button class="active" data-filter="all">All</button>
+    <button data-filter="multi">👥 Multiplayer</button>
+    <button data-filter="solo">🎯 Solo</button>
+  </div>
+  <div class="games" id="games">
+    <a class="card" data-mode="multi" href="tic-tac-toe/">
+      <span class="badge multi">2P</span>
+      <div class="icon">⭕</div><div class="name">Tic-Tac-Toe</div>
+      <div class="desc">Classic Xs and Os with a friend</div>
     </a>
-    <a class="card" href="tic-tac-toe/">
-      <div class="icon">⭕</div>
-      <div class="name">Tic-Tac-Toe</div>
-      <div class="desc">Play with a friend using an invite code</div>
+    <a class="card" data-mode="multi" href="connect-four/">
+      <span class="badge multi">2P</span>
+      <div class="icon">🔴</div><div class="name">Connect Four</div>
+      <div class="desc">Drop discs, connect four to win</div>
     </a>
-    <a class="card" href="sudoku/">
-      <div class="icon">🔢</div>
-      <div class="name">Sudoku</div>
-      <div class="desc">Classic number puzzle, 5 difficulty levels</div>
+    <a class="card" data-mode="multi" href="battleship/">
+      <span class="badge multi">2P</span>
+      <div class="icon">🚢</div><div class="name">Battleship</div>
+      <div class="desc">Sink your friend's fleet</div>
     </a>
-    <a class="card" href="rock-paper-scissors/">
-      <div class="icon">✂️</div>
-      <div class="name">Rock Paper Scissors</div>
-      <div class="desc">Best-of rounds with a friend via invite code</div>
+    <a class="card" data-mode="multi" href="dots-and-boxes/">
+      <span class="badge multi">2P</span>
+      <div class="icon">🔳</div><div class="name">Dots and Boxes</div>
+      <div class="desc">Claim more boxes than your rival</div>
     </a>
-    <a class="card" href="word-game/">
-      <div class="icon">🔤</div>
-      <div class="name">Word Game</div>
-      <div class="desc">Guess the 5-letter word in 6 tries</div>
+    <a class="card" data-mode="multi" href="gomoku/">
+      <span class="badge multi">2P</span>
+      <div class="icon">⚫</div><div class="name">Gomoku</div>
+      <div class="desc">Five in a row wins</div>
     </a>
-    <a class="card" href="dots-and-boxes/">
-      <div class="icon">🔳</div>
-      <div class="name">Dots and Boxes</div>
-      <div class="desc">Claim boxes, play a friend with an invite code</div>
+    <a class="card" data-mode="multi" href="rock-paper-scissors/">
+      <span class="badge multi">2P</span>
+      <div class="icon">✂️</div><div class="name">Rock Paper Scissors</div>
+      <div class="desc">Best-of rounds, quick matches</div>
     </a>
-    <a class="card" href="gomoku/">
-      <div class="icon">⚫</div>
-      <div class="name">Gomoku</div>
-      <div class="desc">Five in a row wins, play a friend with an invite code</div>
+    <a class="card" data-mode="solo" href="sudoku/">
+      <span class="badge solo">1P</span>
+      <div class="icon">🔢</div><div class="name">Sudoku</div>
+      <div class="desc">Number puzzle, 5 difficulties</div>
     </a>
-    <a class="card" href="minesweeper/">
-      <div class="icon">💣</div>
-      <div class="name">Minesweeper</div>
-      <div class="desc">Clear the minefield, three difficulty levels</div>
+    <a class="card" data-mode="solo" href="2048-game/">
+      <span class="badge solo">1P</span>
+      <div class="icon">🧮</div><div class="name">2048</div>
+      <div class="desc">Slide and merge to 2048</div>
     </a>
-    <a class="card" href="battleship/">
-      <div class="icon">🚢</div>
-      <div class="name">Battleship</div>
-      <div class="desc">Sink your friend's fleet with an invite code</div>
+    <a class="card" data-mode="solo" href="minesweeper/">
+      <span class="badge solo">1P</span>
+      <div class="icon">💣</div><div class="name">Minesweeper</div>
+      <div class="desc">Clear the minefield</div>
     </a>
-    <a class="card" href="hangman/">
-      <div class="icon">🪢</div>
-      <div class="name">Hangman</div>
-      <div class="desc">Guess the word before the gallows fills</div>
+    <a class="card" data-mode="solo" href="snake/">
+      <span class="badge solo">1P</span>
+      <div class="icon">🐍</div><div class="name">Snake</div>
+      <div class="desc">Eat, grow, don't crash</div>
     </a>
-    <a class="card" href="snake/">
-      <div class="icon">🐍</div>
-      <div class="name">Snake</div>
-      <div class="desc">Eat, grow, and don't crash</div>
+    <a class="card" data-mode="solo" href="memory-match/">
+      <span class="badge solo">1P</span>
+      <div class="icon">🃏</div><div class="name">Memory Match</div>
+      <div class="desc">Flip and match all pairs</div>
     </a>
-    <a class="card" href="2048-game/">
-      <div class="icon">🧮</div>
-      <div class="name">2048</div>
-      <div class="desc">Slide and merge tiles to reach 2048</div>
+    <a class="card" data-mode="solo" href="word-game/">
+      <span class="badge solo">1P</span>
+      <div class="icon">🔤</div><div class="name">Word Game</div>
+      <div class="desc">Guess the 5-letter word</div>
     </a>
-    <a class="card" href="memory-match/">
-      <div class="icon">🃏</div>
-      <div class="name">Memory Match</div>
-      <div class="desc">Flip cards and match all eight pairs</div>
+    <a class="card" data-mode="solo" href="hangman/">
+      <span class="badge solo">1P</span>
+      <div class="icon">🪢</div><div class="name">Hangman</div>
+      <div class="desc">Beat the gallows</div>
     </a>
   </div>
+  <footer>Multiplayer games use invite codes — no account needed</footer>
+</div>
+<script>
+  const buttons = document.querySelectorAll('.filters button');
+  const cards = document.querySelectorAll('#games .card');
+  buttons.forEach(btn => btn.addEventListener('click', () => {
+    buttons.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const f = btn.dataset.filter;
+    cards.forEach(c => c.classList.toggle('hidden', f !== 'all' && c.dataset.mode !== f));
+  }));
+</script>
 </body>
 </html>
