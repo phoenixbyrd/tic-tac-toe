@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <link rel="icon" href="data:," />
+  <title>Memory Match</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700&family=Newsreader:opsz,wght@6..72,600&display=swap');
+
+    :root {
+      color-scheme: light dark;
+      --bg: #f2f6f2;
+      --surface: #ffffff;
+      --surface-raised: #fbfdfb;
+      --ink: #17251f;
+      --muted: #637069;
+      --line: #d8e0da;
+      --accent: #087f65;
+      --accent-strong: #056650;
+      --accent-soft: #d9f1e9;
+      --warm: #e86443;
+      --warm-soft: #fff0e9;
+      --card-back: #0b6b57;
+      --card-back-line: rgba(255,255,255,.17);
+      --shadow: 0 10px 28px rgba(25, 55, 42, .11);
+      --focus: #de5c3d;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #101713;
+        --surface: #18221d;
+        --surface-raised: #1d2923;
+        --ink: #eef5f0;
+        --muted: #a6b3ab;
+        --line: #344139;
+        --accent: #55cfaa;
+        --accent-strong: #82e0c1;
+        --accent-soft: #173e33;
+        --warm: #f38a6b;
+        --warm-soft: #40271f;
+        --card-back: #167e68;
+        --card-back-line: rgba(255,255,255,.18);
+        --shadow: 0 12px 32px rgba(0, 0, 0, .28);
+        --focus: #ff9a7d;
+      }
+    }
+
+    * { box-sizing: border-box; }
+    html { min-height: 100%; background: var(--bg); }
+    body {
+      min-height: 100vh;
+      margin: 0;
+      overflow-x: hidden;
+      background:
+        radial-gradient(circle at 12% 8%, color-mix(in srgb, var(--accent-soft) 62%, transparent) 0 9rem, transparent 9.1rem),
+        var(--bg);
+      color: var(--ink);
+      font-family: "DM Sans", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    button { font: inherit; }
+    button:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+
+    .app {
+      width: min(100%, 720px);
+      margin: 0 auto;
+      padding: max(22px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(28px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+    }
+
+    .game-head {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: end;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+    h1 {
+      margin: 0;
+      font-family: "Newsreader", serif;
+      font-size: clamp(2.35rem, 9vw, 4.3rem);
+      line-height: .93;
+      letter-spacing: -.045em;
+      font-weight: 600;
+      max-width: 9ch;
+    }
+    .subline {
+      margin: 9px 0 0;
+      color: var(--muted);
+      font-size: .94rem;
+      line-height: 1.45;
+    }
+    .new-game {
+      min-height: 48px;
+      padding: 0 18px;
+      border: 0;
+      border-radius: 999px;
+      background: var(--ink);
+      color: var(--bg);
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 150ms ease, background 150ms ease;
+      white-space: nowrap;
+    }
+    .new-game:hover { transform: translateY(-1px); }
+    .new-game:active { transform: translateY(1px); }
+
+    .score-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 18px;
+    }
+    .stat {
+      position: relative;
+      padding: 13px 10px 12px;
+      text-align: center;
+    }
+    .stat + .stat::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 13px;
+      bottom: 13px;
+      width: 1px;
+      background: var(--line);
+    }
+    .stat-label {
+      display: block;
+      color: var(--muted);
+      font-size: .71rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .stat-value {
+      display: block;
+      margin-top: 2px;
+      font-size: 1.28rem;
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+    }
+
+    .board-wrap { position: relative; }
+    .board {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: clamp(8px, 2.3vw, 15px);
+      width: 100%;
+      perspective: 900px;
+    }
+    .card {
+      position: relative;
+      aspect-ratio: 1 / 1;
+      padding: 0;
+      border: 0;
+      border-radius: clamp(10px, 2.5vw, 18px);
+      background: transparent;
+      cursor: pointer;
+      transform-style: preserve-3d;
+      transition: transform 420ms cubic-bezier(.2,.72,.2,1);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .card::after {
+      content: "";
+      position: absolute;
+      inset: 8% 7% 2%;
+      border-radius: inherit;
+      background: rgba(12, 45, 35, .18);
+      filter: blur(9px);
+      opacity: .55;
+      z-index: -1;
+      transition: opacity 200ms ease;
+    }
+    .card:hover::after { opacity: .8; }
+    .card.is-flipped { transform: rotateY(180deg); }
+    .card.is-matched { cursor: default; }
+    .card.is-matched::after { opacity: .15; }
+    .face {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      border-radius: inherit;
+      overflow: hidden;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+    .back {
+      background-color: var(--card-back);
+      background-image:
+        linear-gradient(45deg, transparent 46%, var(--card-back-line) 47% 53%, transparent 54%),
+        linear-gradient(-45deg, transparent 46%, var(--card-back-line) 47% 53%, transparent 54%);
+      background-size: 18px 18px;
+      border: 1px solid color-mix(in srgb, var(--card-back) 70%, white);
+    }
+    .back::after {
+      content: "";
+      width: 28%;
+      aspect-ratio: 1;
+      border: 2px solid rgba(255,255,255,.84);
+      border-radius: 50%;
+      box-shadow: inset 0 0 0 5px rgba(255,255,255,.08), 0 0 0 5px rgba(255,255,255,.08);
+    }
+    .front {
+      transform: rotateY(180deg);
+      background: var(--surface);
+      border: 1px solid var(--line);
+    }
+    .front svg {
+      width: 49%;
+      height: 49%;
+      color: var(--symbol-color, var(--accent));
+      overflow: visible;
+    }
+    .card.is-matched .front {
+      background: var(--accent-soft);
+      border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
+      animation: matchPulse 420ms ease;
+    }
+
+    .message {
+      min-height: 28px;
+      margin: 17px 0 0;
+      text-align: center;
+      color: var(--muted);
+      font-size: .88rem;
+      font-weight: 600;
+    }
+    .message strong { color: var(--ink); }
+
+    .finish {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      border-radius: 20px;
+      background: color-mix(in srgb, var(--bg) 84%, transparent);
+      backdrop-filter: blur(6px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 230ms ease;
+    }
+    .finish.is-visible { opacity: 1; pointer-events: auto; }
+    .finish-card {
+      width: min(100%, 370px);
+      padding: 30px 24px 24px;
+      border-radius: 22px 22px 8px 22px;
+      background: var(--surface-raised);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+    .finish-mark {
+      width: 52px;
+      height: 52px;
+      margin: 0 auto 13px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--warm-soft);
+      color: var(--warm);
+    }
+    .finish-mark svg { width: 27px; height: 27px; }
+    .finish h2 {
+      margin: 0;
+      font-family: "Newsreader", serif;
+      font-size: 2rem;
+      letter-spacing: -.025em;
+    }
+    .finish p { margin: 8px 0 20px; color: var(--muted); line-height: 1.5; }
+    .finish button {
+      min-height: 48px;
+      width: 100%;
+      border: 0;
+      border-radius: 10px;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    @keyframes matchPulse {
+      0% { transform: rotateY(180deg) scale(1); }
+      55% { transform: rotateY(180deg) scale(1.055); }
+      100% { transform: rotateY(180deg) scale(1); }
+    }
+
+    @media (max-width: 480px) {
+      .app { padding-top: max(18px, env(safe-area-inset-top)); }
+      .game-head { align-items: center; gap: 10px; margin-bottom: 12px; }
+      h1 { font-size: clamp(2.15rem, 12vw, 3.25rem); max-width: 7ch; }
+      .subline { font-size: .83rem; }
+      .new-game { min-width: 48px; width: 48px; padding: 0; font-size: 0; }
+      .new-game::before {
+        content: "";
+        display: block;
+        width: 19px;
+        height: 19px;
+        margin: auto;
+        border: 2px solid currentColor;
+        border-left-color: transparent;
+        border-radius: 50%;
+      }
+      .new-game::after {
+        content: "";
+        position: absolute;
+        width: 7px;
+        height: 7px;
+        border-left: 2px solid currentColor;
+        border-bottom: 2px solid currentColor;
+        transform: translate(-12px, -15px) rotate(-12deg);
+      }
+      .new-game { position: relative; }
+      .score-strip { margin-bottom: 12px; }
+      .stat { padding: 10px 6px; }
+      .stat + .stat::before { top: 10px; bottom: 10px; }
+      .stat-value { font-size: 1.12rem; }
+      .board { gap: 8px; }
+      .message { margin-top: 12px; }
+    }
+
+    @media (max-width: 350px) {
+      .app { padding-left: 10px; padding-right: 10px; }
+      .board { gap: 6px; }
+      .card { border-radius: 9px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
+    <defs>
+      <symbol id="s-orbit" viewBox="0 0 64 64"><circle cx="32" cy="32" r="7" fill="currentColor"/><ellipse cx="32" cy="32" rx="27" ry="12" fill="none" stroke="currentColor" stroke-width="5" transform="rotate(-25 32 32)"/></symbol>
+      <symbol id="s-flower" viewBox="0 0 64 64"><g fill="currentColor"><ellipse cx="32" cy="14" rx="8" ry="13"/><ellipse cx="32" cy="50" rx="8" ry="13"/><ellipse cx="14" cy="32" rx="13" ry="8"/><ellipse cx="50" cy="32" rx="13" ry="8"/></g><circle cx="32" cy="32" r="8" fill="none" stroke="currentColor" stroke-width="4"/></symbol>
+      <symbol id="s-wave" viewBox="0 0 64 64"><path d="M5 25c9-11 18-11 27 0s18 11 27 0M5 40c9-11 18-11 27 0s18 11 27 0" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"/></symbol>
+      <symbol id="s-spark" viewBox="0 0 64 64"><path d="M32 4c2 17 11 26 28 28-17 2-26 11-28 28-2-17-11-26-28-28C21 30 30 21 32 4Z" fill="currentColor"/></symbol>
+      <symbol id="s-arch" viewBox="0 0 64 64"><path d="M11 55V31a21 21 0 0 1 42 0v24H41V31a9 9 0 0 0-18 0v24H11Z" fill="currentColor"/></symbol>
+      <symbol id="s-cube" viewBox="0 0 64 64"><path d="m32 5 24 14v27L32 59 8 46V19L32 5Zm0 7.5L16 22v20l16 8.5L48 42V22l-16-9.5Z" fill="currentColor"/><path d="m12 20 20 12 20-12M32 32v23" fill="none" stroke="currentColor" stroke-width="5"/></symbol>
+      <symbol id="s-eye" viewBox="0 0 64 64"><path d="M5 32s10-18 27-18 27 18 27 18-10 18-27 18S5 32 5 32Z" fill="none" stroke="currentColor" stroke-width="5"/><circle cx="32" cy="32" r="9" fill="currentColor"/></symbol>
+      <symbol id="s-leaf" viewBox="0 0 64 64"><path d="M55 8C27 8 10 21 10 40c0 10 7 16 17 16 20 0 28-22 28-48Z" fill="currentColor"/><path d="M15 52c9-14 19-23 34-34" fill="none" stroke="var(--surface)" stroke-width="4" stroke-linecap="round"/></symbol>
+      <symbol id="s-check" viewBox="0 0 64 64"><path d="m14 33 12 12 25-27" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    </defs>
+  </svg>
+
+  <main class="app">
+    <header class="game-head">
+      <div>
+        <h1>Find every pair.</h1>
+        <p class="subline">Turn over two cards at a time.</p>
+      </div>
+      <button class="new-game" id="newGame" type="button" aria-label="Shuffle and start a new game">New game</button>
+    </header>
+
+    <section class="score-strip" aria-label="Game statistics">
+      <div class="stat"><span class="stat-label">Moves</span><span class="stat-value" id="moves">0</span></div>
+      <div class="stat"><span class="stat-label">Pairs</span><span class="stat-value"><span id="pairs">0</span>/8</span></div>
+      <div class="stat"><span class="stat-label">Time</span><span class="stat-value" id="timer">0:00</span></div>
+    </section>
+
+    <div class="board-wrap">
+      <section class="board" id="board" aria-label="Memory card grid"></section>
+      <section class="finish" id="finish" aria-hidden="true" aria-live="polite">
+        <div class="finish-card">
+          <div class="finish-mark"><svg aria-hidden="true"><use href="#s-check"></use></svg></div>
+          <h2>All matched!</h2>
+          <p id="finishSummary">You found 8 pairs.</p>
+          <button type="button" id="playAgain">Shuffle and play again</button>
+        </div>
+      </section>
+    </div>
+
+    <p class="message" id="message" aria-live="polite">Pick any card to begin.</p>
+  </main>
+
+  <script>
+    (function () {
+      var symbols = [
+        { id: 'orbit', color: '#0c8068' },
+        { id: 'flower', color: '#de6747' },
+        { id: 'wave', color: '#3172b9' },
+        { id: 'spark', color: '#d58b13' },
+        { id: 'arch', color: '#a14d73' },
+        { id: 'cube', color: '#647833' },
+        { id: 'eye', color: '#7059a7' },
+        { id: 'leaf', color: '#168b52' }
+      ];
+      var board = document.getElementById('board');
+      var movesEl = document.getElementById('moves');
+      var pairsEl = document.getElementById('pairs');
+      var timerEl = document.getElementById('timer');
+      var messageEl = document.getElementById('message');
+      var finish = document.getElementById('finish');
+      var finishSummary = document.getElementById('finishSummary');
+      var firstCard = null;
+      var secondCard = null;
+      var lockBoard = false;
+      var moves = 0;
+      var pairs = 0;
+      var startedAt = 0;
+      var elapsed = 0;
+      var timerHandle = null;
+      var gameSerial = 0;
+
+      function shuffle(items) {
+        for (var i = items.length - 1; i > 0; i--) {
+          var j = Math.floor(Math.random() * (i + 1));
+          var swap = items[i]; items[i] = items[j]; items[j] = swap;
+        }
+        return items;
+      }
+
+      function formatTime(totalSeconds) {
+        var minutes = Math.floor(totalSeconds / 60);
+        var seconds = totalSeconds % 60;
+        return minutes + ':' + String(seconds).padStart(2, '0');
+      }
+
+      function startTimer() {
+        if (startedAt) return;
+        startedAt = Date.now();
+        timerHandle = window.setInterval(function () {
+          elapsed = Math.floor((Date.now() - startedAt) / 1000);
+          timerEl.textContent = formatTime(elapsed);
+        }, 250);
+      }
+
+      function stopTimer() {
+        if (timerHandle) window.clearInterval(timerHandle);
+        timerHandle = null;
+        if (startedAt) elapsed = Math.floor((Date.now() - startedAt) / 1000);
+        timerEl.textContent = formatTime(elapsed);
+      }
+
+      function cardMarkup(item, index) {
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'card';
+        button.dataset.symbol = item.id;
+        button.style.setProperty('--symbol-color', item.color);
+        button.setAttribute('aria-label', 'Hidden card ' + (index + 1));
+        button.setAttribute('aria-pressed', 'false');
+        button.innerHTML = '<span class="face back" aria-hidden="true"></span>' +
+          '<span class="face front" aria-hidden="true"><svg><use href="#s-' + item.id + '"></use></svg></span>';
+        button.addEventListener('click', handleCardClick);
+        return button;
+      }
+
+      function handleCardClick(event) {
+        var card = event.currentTarget;
+        if (lockBoard || card === firstCard || card.classList.contains('is-matched')) return;
+        startTimer();
+        card.classList.add('is-flipped');
+        card.setAttribute('aria-pressed', 'true');
+        card.setAttribute('aria-label', 'Revealed ' + card.dataset.symbol + ' card');
+
+        if (!firstCard) {
+          firstCard = card;
+          messageEl.textContent = 'Now find its match.';
+          return;
+        }
+
+        secondCard = card;
+        moves += 1;
+        movesEl.textContent = moves;
+        lockBoard = true;
+
+        if (firstCard.dataset.symbol === secondCard.dataset.symbol) {
+          window.setTimeout(markMatch, 260);
+        } else {
+          messageEl.textContent = 'Not a pair — keep looking.';
+          window.setTimeout(hideCards, 850);
+        }
+      }
+
+      function markMatch() {
+        firstCard.classList.add('is-matched');
+        secondCard.classList.add('is-matched');
+        firstCard.setAttribute('aria-label', 'Matched ' + firstCard.dataset.symbol + ' card');
+        secondCard.setAttribute('aria-label', 'Matched ' + secondCard.dataset.symbol + ' card');
+        firstCard.disabled = true;
+        secondCard.disabled = true;
+        pairs += 1;
+        pairsEl.textContent = pairs;
+        resetTurn();
+        if (pairs === symbols.length) endGame();
+        else messageEl.innerHTML = '<strong>Pair found.</strong> ' + (symbols.length - pairs) + ' left.';
+      }
+
+      function hideCards() {
+        firstCard.classList.remove('is-flipped');
+        secondCard.classList.remove('is-flipped');
+        firstCard.setAttribute('aria-pressed', 'false');
+        secondCard.setAttribute('aria-pressed', 'false');
+        var cards = board.querySelectorAll('.card');
+        firstCard.setAttribute('aria-label', 'Hidden card ' + (Array.prototype.indexOf.call(cards, firstCard) + 1));
+        secondCard.setAttribute('aria-label', 'Hidden card ' + (Array.prototype.indexOf.call(cards, secondCard) + 1));
+        resetTurn();
+      }
+
+      function resetTurn() {
+        firstCard = null;
+        secondCard = null;
+        lockBoard = false;
+      }
+
+      function endGame() {
+        stopTimer();
+        messageEl.textContent = 'Board cleared.';
+        finishSummary.textContent = 'You found all 8 pairs in ' + moves + ' ' + (moves === 1 ? 'move' : 'moves') + ' and ' + formatTime(elapsed) + '.';
+        window.setTimeout(function () {
+          finish.classList.add('is-visible');
+          finish.setAttribute('aria-hidden', 'false');
+          document.getElementById('playAgain').focus();
+        }, 520);
+      }
+
+      function newGame() {
+        gameSerial += 1;
+        if (timerHandle) window.clearInterval(timerHandle);
+        timerHandle = null;
+        firstCard = null;
+        secondCard = null;
+        lockBoard = false;
+        moves = 0;
+        pairs = 0;
+        startedAt = 0;
+        elapsed = 0;
+        movesEl.textContent = '0';
+        pairsEl.textContent = '0';
+        timerEl.textContent = '0:00';
+        messageEl.textContent = 'Pick any card to begin.';
+        finish.classList.remove('is-visible');
+        finish.setAttribute('aria-hidden', 'true');
+        board.innerHTML = '';
+        var deck = shuffle(symbols.concat(symbols).map(function (item) {
+          return { id: item.id, color: item.color };
+        }));
+        deck.forEach(function (item, index) { board.appendChild(cardMarkup(item, index)); });
+      }
+
+      document.getElementById('newGame').addEventListener('click', newGame);
+      document.getElementById('playAgain').addEventListener('click', newGame);
+      newGame();
+    }());
+  </script>
+</body>
+</html>
