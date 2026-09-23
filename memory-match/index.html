@@ -213,6 +213,7 @@
     .front svg {
       width: 49%;
       height: 49%;
+      display: block;
       color: var(--symbol-color, var(--accent));
       overflow: visible;
     }
@@ -336,20 +337,6 @@
   </style>
 </head>
 <body>
-  <svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
-    <defs>
-      <symbol id="s-orbit" viewBox="0 0 64 64"><circle cx="32" cy="32" r="7" fill="currentColor"/><ellipse cx="32" cy="32" rx="27" ry="12" fill="none" stroke="currentColor" stroke-width="5" transform="rotate(-25 32 32)"/></symbol>
-      <symbol id="s-flower" viewBox="0 0 64 64"><g fill="currentColor"><ellipse cx="32" cy="14" rx="8" ry="13"/><ellipse cx="32" cy="50" rx="8" ry="13"/><ellipse cx="14" cy="32" rx="13" ry="8"/><ellipse cx="50" cy="32" rx="13" ry="8"/></g><circle cx="32" cy="32" r="8" fill="none" stroke="currentColor" stroke-width="4"/></symbol>
-      <symbol id="s-wave" viewBox="0 0 64 64"><path d="M5 25c9-11 18-11 27 0s18 11 27 0M5 40c9-11 18-11 27 0s18 11 27 0" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"/></symbol>
-      <symbol id="s-spark" viewBox="0 0 64 64"><path d="M32 4c2 17 11 26 28 28-17 2-26 11-28 28-2-17-11-26-28-28C21 30 30 21 32 4Z" fill="currentColor"/></symbol>
-      <symbol id="s-arch" viewBox="0 0 64 64"><path d="M11 55V31a21 21 0 0 1 42 0v24H41V31a9 9 0 0 0-18 0v24H11Z" fill="currentColor"/></symbol>
-      <symbol id="s-cube" viewBox="0 0 64 64"><path d="m32 5 24 14v27L32 59 8 46V19L32 5Zm0 7.5L16 22v20l16 8.5L48 42V22l-16-9.5Z" fill="currentColor"/><path d="m12 20 20 12 20-12M32 32v23" fill="none" stroke="currentColor" stroke-width="5"/></symbol>
-      <symbol id="s-eye" viewBox="0 0 64 64"><path d="M5 32s10-18 27-18 27 18 27 18-10 18-27 18S5 32 5 32Z" fill="none" stroke="currentColor" stroke-width="5"/><circle cx="32" cy="32" r="9" fill="currentColor"/></symbol>
-      <symbol id="s-leaf" viewBox="0 0 64 64"><path d="M55 8C27 8 10 21 10 40c0 10 7 16 17 16 20 0 28-22 28-48Z" fill="currentColor"/><path d="M15 52c9-14 19-23 34-34" fill="none" stroke="var(--surface)" stroke-width="4" stroke-linecap="round"/></symbol>
-      <symbol id="s-check" viewBox="0 0 64 64"><path d="m14 33 12 12 25-27" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
-    </defs>
-  </svg>
-
   <main class="app">
     <header class="game-head">
       <div>
@@ -369,7 +356,7 @@
       <section class="board" id="board" aria-label="Memory card grid"></section>
       <section class="finish" id="finish" aria-hidden="true" aria-live="polite">
         <div class="finish-card">
-          <div class="finish-mark"><svg aria-hidden="true"><use href="#s-check"></use></svg></div>
+          <div class="finish-mark"><svg viewBox="0 0 64 64" aria-hidden="true"><path d="m14 33 12 12 25-27" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
           <h2>All matched!</h2>
           <p id="finishSummary">You found 8 pairs.</p>
           <button type="button" id="playAgain">Shuffle and play again</button>
@@ -383,14 +370,14 @@
   <script>
     (function () {
       var symbols = [
-        { id: 'orbit', color: '#0c8068' },
-        { id: 'flower', color: '#de6747' },
-        { id: 'wave', color: '#3172b9' },
-        { id: 'spark', color: '#d58b13' },
-        { id: 'arch', color: '#a14d73' },
-        { id: 'cube', color: '#647833' },
-        { id: 'eye', color: '#7059a7' },
-        { id: 'leaf', color: '#168b52' }
+        { id: 'orbit', color: '#0c8068', svg: '<circle cx="32" cy="32" r="7" fill="currentColor"/><ellipse cx="32" cy="32" rx="27" ry="12" fill="none" stroke="currentColor" stroke-width="5" transform="rotate(-25 32 32)"/>' },
+        { id: 'flower', color: '#de6747', svg: '<g fill="currentColor"><ellipse cx="32" cy="14" rx="8" ry="13"/><ellipse cx="32" cy="50" rx="8" ry="13"/><ellipse cx="14" cy="32" rx="13" ry="8"/><ellipse cx="50" cy="32" rx="13" ry="8"/></g><circle cx="32" cy="32" r="8" fill="none" stroke="currentColor" stroke-width="4"/>' },
+        { id: 'wave', color: '#3172b9', svg: '<path d="M5 25c9-11 18-11 27 0s18 11 27 0M5 40c9-11 18-11 27 0s18 11 27 0" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>' },
+        { id: 'spark', color: '#d58b13', svg: '<path d="M32 4c2 17 11 26 28 28-17 2-26 11-28 28-2-17-11-26-28-28C21 30 30 21 32 4Z" fill="currentColor"/>' },
+        { id: 'arch', color: '#a14d73', svg: '<path d="M11 55V31a21 21 0 0 1 42 0v24H41V31a9 9 0 0 0-18 0v24H11Z" fill="currentColor"/>' },
+        { id: 'cube', color: '#647833', svg: '<path d="m32 5 24 14v27L32 59 8 46V19L32 5Zm0 7.5L16 22v20l16 8.5L48 42V22l-16-9.5Z" fill="currentColor"/><path d="m12 20 20 12 20-12M32 32v23" fill="none" stroke="currentColor" stroke-width="5"/>' },
+        { id: 'eye', color: '#7059a7', svg: '<path d="M5 32s10-18 27-18 27 18 27 18-10 18-27 18S5 32 5 32Z" fill="none" stroke="currentColor" stroke-width="5"/><circle cx="32" cy="32" r="9" fill="currentColor"/>' },
+        { id: 'leaf', color: '#168b52', svg: '<path d="M55 8C27 8 10 21 10 40c0 10 7 16 17 16 20 0 28-22 28-48Z" fill="currentColor"/><path d="M15 52c9-14 19-23 34-34" fill="none" stroke="var(--surface)" stroke-width="4" stroke-linecap="round"/>' }
       ];
       var board = document.getElementById('board');
       var movesEl = document.getElementById('moves');
@@ -448,7 +435,7 @@
         button.setAttribute('aria-label', 'Hidden card ' + (index + 1));
         button.setAttribute('aria-pressed', 'false');
         button.innerHTML = '<span class="face back" aria-hidden="true"></span>' +
-          '<span class="face front" aria-hidden="true"><svg><use href="#s-' + item.id + '"></use></svg></span>';
+          '<span class="face front" aria-hidden="true"><svg viewBox="0 0 64 64" aria-hidden="true">' + item.svg + '</svg></span>';
         button.addEventListener('click', handleCardClick);
         return button;
       }
@@ -541,7 +528,7 @@
         finish.setAttribute('aria-hidden', 'true');
         board.innerHTML = '';
         var deck = shuffle(symbols.concat(symbols).map(function (item) {
-          return { id: item.id, color: item.color };
+          return { id: item.id, color: item.color, svg: item.svg };
         }));
         deck.forEach(function (item, index) { board.appendChild(cardMarkup(item, index)); });
       }
