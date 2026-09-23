@@ -1,0 +1,530 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="theme-color" content="#e8f0ff" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0c1526" media="(prefers-color-scheme: dark)" />
+  <link rel="icon" href="data:," />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <title>Connect Four</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #e8f0ff;
+      --ink: #101a30;
+      --muted: #52617a;
+      --surface: #ffffff;
+      --line: #13213e;
+      --blue: #1256d8;
+      --blue-deep: #0b3fa9;
+      --blue-soft: #c9ddff;
+      --red: #ef3f4f;
+      --red-deep: #bd1e31;
+      --yellow: #ffd447;
+      --yellow-deep: #d99b00;
+      --hole: #eef3fd;
+      --shadow: rgba(16, 26, 48, .17);
+      --soft-line: rgba(19, 33, 62, .17);
+      --danger-bg: #ffe5e8;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0c1526;
+        --ink: #f5f7ff;
+        --muted: #a9b5ca;
+        --surface: #152139;
+        --line: #f5f7ff;
+        --blue: #3e7bf0;
+        --blue-deep: #1f56bd;
+        --blue-soft: #203b6f;
+        --red: #ff6470;
+        --red-deep: #c83343;
+        --yellow: #ffd95b;
+        --yellow-deep: #dca60f;
+        --hole: #101a2c;
+        --shadow: rgba(0, 0, 0, .36);
+        --soft-line: rgba(245, 247, 255, .18);
+        --danger-bg: #49242d;
+      }
+    }
+    * { box-sizing: border-box; }
+    html { min-height: 100%; background: var(--bg); }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      min-height: 100svh;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 14px 14px, var(--soft-line) 1.4px, transparent 1.5px) 0 0 / 28px 28px,
+        var(--bg);
+      font-family: "Archivo", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    button, input { font: inherit; }
+    button { -webkit-tap-highlight-color: transparent; }
+    button:focus-visible, input:focus-visible { outline: 3px solid var(--yellow-deep); outline-offset: 3px; }
+    .page {
+      width: min(100%, 1180px);
+      min-height: 100vh;
+      min-height: 100svh;
+      margin: 0 auto;
+      padding: clamp(28px, 5vw, 70px) clamp(18px, 5vw, 66px) max(34px, env(safe-area-inset-bottom));
+      display: grid;
+      grid-template-columns: minmax(270px, .8fr) minmax(430px, 1.2fr);
+      align-items: center;
+      gap: clamp(38px, 6vw, 86px);
+    }
+    .intro { align-self: center; }
+    h1 {
+      margin: 0;
+      max-width: 7.5ch;
+      font-size: clamp(3rem, 6.7vw, 5.7rem);
+      line-height: .91;
+      letter-spacing: -.065em;
+      font-weight: 800;
+    }
+    .intro > p {
+      max-width: 31rem;
+      margin: 24px 0 0;
+      color: var(--muted);
+      font-size: clamp(1rem, 1.7vw, 1.18rem);
+      line-height: 1.55;
+    }
+    .setup { display: grid; gap: 20px; max-width: 410px; margin-top: 34px; }
+    .primary, .secondary, .ghost {
+      min-height: 52px;
+      border: 2px solid var(--line);
+      padding: 0 18px;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .12s ease, box-shadow .12s ease, background-color .12s ease;
+    }
+    .primary { color: #221800; background: var(--yellow); box-shadow: 4px 4px 0 var(--line); }
+    .secondary { color: var(--ink); background: var(--surface); }
+    .ghost { min-height: 44px; color: var(--ink); background: transparent; border-color: var(--soft-line); font-size: .92rem; }
+    .primary:hover, .secondary:hover { transform: translate(-1px, -1px); }
+    .primary:active, .secondary:active { transform: translate(2px, 2px); box-shadow: none; }
+    button:disabled { cursor: not-allowed; opacity: .48; transform: none; box-shadow: none; }
+    .join-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; }
+    .code-input {
+      width: 100%; min-width: 0; height: 52px;
+      border: 2px solid var(--line); border-radius: 8px;
+      padding: 0 14px; background: var(--surface); color: var(--ink);
+      font-family: "IBM Plex Mono", monospace; font-weight: 600; letter-spacing: .07em; text-transform: uppercase;
+    }
+    .code-input::placeholder { color: var(--muted); letter-spacing: 0; text-transform: none; }
+    .note { margin: 0; color: var(--muted); font-size: .82rem; line-height: 1.5; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+    .game-panel {
+      min-width: 0;
+      min-height: 590px;
+      padding: clamp(20px, 3.8vw, 38px);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      background: var(--surface);
+      border: 2px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 10px 10px 0 var(--line);
+    }
+    .lobby-art { display: grid; place-items: center; gap: 26px; text-align: center; }
+    .mini-rack {
+      width: min(86%, 370px);
+      padding: 9% 8% 8%;
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4%;
+      background: var(--blue);
+      border: 4px solid var(--line);
+      border-radius: 13px 13px 20px 20px;
+      box-shadow: 7px 8px 0 var(--shadow);
+      transform: rotate(1deg);
+    }
+    .mini-rack span { aspect-ratio: 1; border-radius: 50%; background: var(--hole); box-shadow: inset 0 2px 0 rgba(0,0,0,.16); }
+    .mini-rack .r { background: var(--red); }
+    .mini-rack .y { background: var(--yellow); }
+    .lobby-art strong { font-size: clamp(1.25rem, 2.4vw, 1.55rem); }
+    .lobby-art p { margin: 7px 0 0; color: var(--muted); }
+
+    .game { display: none; width: min(100%, 610px); margin: auto; }
+    .game.active { display: block; }
+    .lobby-art.hidden, .intro.hidden { display: none; }
+    .game-head { display: grid; grid-template-columns: 1fr auto; align-items: start; gap: 14px; margin-bottom: 18px; }
+    .status { margin: 0; font-size: clamp(1.42rem, 3vw, 2rem); line-height: 1.08; letter-spacing: -.035em; }
+    .substatus { margin: 7px 0 0; color: var(--muted); font-size: .92rem; line-height: 1.35; }
+    .room { border: 0; padding: 2px 0; color: var(--ink); background: transparent; cursor: pointer; text-align: right; }
+    .room small { display: block; margin-bottom: 3px; color: var(--muted); }
+    .room-code { font-family: "IBM Plex Mono", monospace; font-weight: 600; letter-spacing: .07em; }
+    .player-key { display: flex; align-items: center; gap: 10px; margin: 0 0 10px; min-height: 26px; color: var(--muted); font-size: .82rem; }
+    .key-disc { width: 18px; aspect-ratio: 1; border-radius: 50%; background: var(--red); box-shadow: inset 0 -2px 0 var(--red-deep); }
+    .key-disc.yellow { background: var(--yellow); box-shadow: inset 0 -2px 0 var(--yellow-deep); }
+    .board-wrap { width: 100%; }
+    .drop-row {
+      display: grid; grid-template-columns: repeat(7, 1fr); gap: clamp(3px, 1vw, 8px);
+      padding: 0 clamp(9px, 2.4vw, 18px) 8px;
+    }
+    .drop {
+      min-width: 0; min-height: 42px; padding: 0;
+      border: 0; border-radius: 7px; background: transparent; color: var(--blue);
+      font-size: clamp(1.4rem, 4vw, 2rem); line-height: 1; cursor: pointer;
+      transition: transform .12s ease, background-color .12s ease;
+    }
+    .drop:hover:not(:disabled) { background: var(--blue-soft); transform: translateY(2px); }
+    .drop:disabled { opacity: .24; }
+    .rack {
+      width: 100%;
+      padding: clamp(9px, 2.2vw, 17px);
+      display: grid; grid-template-columns: repeat(7, 1fr); gap: clamp(4px, 1.2vw, 10px);
+      background: var(--blue);
+      border: 3px solid var(--line);
+      border-radius: 12px 12px 19px 19px;
+      box-shadow: inset 0 -8px 0 var(--blue-deep), 0 7px 0 var(--shadow);
+    }
+    .slot {
+      aspect-ratio: 1; border-radius: 50%; background: var(--hole);
+      box-shadow: inset 0 3px 0 rgba(0,0,0,.2), 0 1px 0 rgba(255,255,255,.18);
+    }
+    .slot.red { background: var(--red); box-shadow: inset 0 -4px 0 var(--red-deep), inset 0 2px 0 rgba(255,255,255,.32); }
+    .slot.yellow { background: var(--yellow); box-shadow: inset 0 -4px 0 var(--yellow-deep), inset 0 2px 0 rgba(255,255,255,.34); }
+    .slot.win { outline: 4px solid var(--surface); outline-offset: -6px; animation: pulse 1s ease-in-out infinite alternate; }
+    @keyframes pulse { to { transform: scale(.88); } }
+    .game-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 28px; }
+    .banner { display: none; margin: 0 0 16px; padding: 12px 14px; border-radius: 7px; color: var(--ink); background: var(--danger-bg); font-size: .88rem; line-height: 1.4; }
+    .banner.show { display: block; }
+    .toast {
+      position: fixed; left: 50%; bottom: max(20px, env(safe-area-inset-bottom)); z-index: 5;
+      max-width: calc(100vw - 32px); padding: 10px 16px; border-radius: 999px;
+      color: var(--surface); background: var(--ink); font-weight: 600; text-align: center;
+      opacity: 0; pointer-events: none; transform: translate(-50%, 16px); transition: .18s ease;
+    }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+    @media (max-width: 820px) {
+      .page { display: block; padding-top: 34px; }
+      h1 { max-width: 8ch; font-size: clamp(3rem, 14vw, 5rem); }
+      .intro > p { margin-top: 16px; }
+      .setup { margin-top: 26px; }
+      .game-panel { min-height: 0; margin-top: 40px; padding: clamp(18px, 5vw, 30px); box-shadow: 6px 6px 0 var(--line); }
+      .page.playing { display: grid; place-items: center; padding-top: 20px; }
+      .page.playing .game-panel { width: min(100%, 650px); margin: 0; }
+    }
+    @media (max-width: 440px) {
+      .join-row { grid-template-columns: 1fr; }
+      .join-row .secondary { width: 100%; }
+      .game-panel { padding: 14px; border-radius: 12px; }
+      .game-head { grid-template-columns: 1fr auto; gap: 8px; }
+      .room small { font-size: .72rem; }
+      .room-code { font-size: .86rem; }
+      .drop-row { padding-inline: 7px; gap: 2px; }
+      .drop { min-height: 38px; }
+      .rack { padding: 7px; gap: 4px; border-width: 2px; box-shadow: inset 0 -5px 0 var(--blue-deep), 0 5px 0 var(--shadow); }
+      .game-actions { grid-template-columns: 1fr; margin-top: 24px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page" id="page">
+    <section class="intro" id="intro" aria-labelledby="headline">
+      <h1 id="headline">Drop four. Block three.</h1>
+      <p>Open a room, send the invite code, and take turns live from two phones or browsers.</p>
+      <div class="setup">
+        <button class="primary" id="createBtn" type="button">Create a new game</button>
+        <div class="join-row">
+          <label class="sr-only" for="codeInput">Invite code</label>
+          <input class="code-input" id="codeInput" maxlength="9" autocomplete="off" spellcheck="false" autocapitalize="characters" inputmode="text" placeholder="Enter invite code" />
+          <button class="secondary" id="joinBtn" type="button">Join</button>
+        </div>
+        <p class="note">Games use a public message relay. Invite codes aren’t passwords, so don’t use the game to share private information.</p>
+      </div>
+    </section>
+
+    <section class="game-panel" aria-live="polite">
+      <div class="lobby-art" id="lobbyArt">
+        <div class="mini-rack" aria-hidden="true">
+          <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span class="y"></span><span></span><span></span><span></span>
+          <span></span><span></span><span class="r"></span><span class="r"></span><span class="y"></span><span></span><span></span>
+          <span></span><span class="r"></span><span class="y"></span><span class="r"></span><span class="y"></span><span></span><span></span>
+        </div>
+        <div><strong>First to connect four wins.</strong><p>Horizontal, vertical, or diagonal.</p></div>
+      </div>
+
+      <div class="game" id="game">
+        <div class="banner" id="banner" role="alert"></div>
+        <div class="game-head">
+          <div>
+            <h2 class="status" id="status">Connecting…</h2>
+            <p class="substatus" id="substatus">Opening the room</p>
+          </div>
+          <button class="room" id="copyBtn" type="button" title="Copy invite code">
+            <small>Invite code</small>
+            <span class="room-code" id="roomCode">—</span>
+          </button>
+        </div>
+        <div class="player-key" id="playerKey" aria-live="polite"></div>
+        <div class="board-wrap">
+          <div class="drop-row" id="dropRow" aria-label="Choose a column"></div>
+          <div class="rack" id="board" role="grid" aria-label="Connect Four board"></div>
+        </div>
+        <div class="game-actions">
+          <button class="secondary" id="newRoundBtn" type="button" disabled>New round</button>
+          <button class="ghost" id="leaveBtn" type="button">Leave room</button>
+        </div>
+      </div>
+    </section>
+  </main>
+  <div class="toast" id="toast" role="status"></div>
+
+  <script>
+    (function () {
+      "use strict";
+      var BROKER = "wss://broker.emqx.io:8084/mqtt";
+      var PREFIX = "muse-connect-four-v1/";
+      var ROWS = 6, COLS = 7, MAX_AGE = 12 * 60 * 60 * 1000;
+      var el = function (id) { return document.getElementById(id); };
+      var createBtn = el("createBtn"), joinBtn = el("joinBtn"), codeInput = el("codeInput");
+      var intro = el("intro"), lobbyArt = el("lobbyArt"), gameEl = el("game"), page = el("page");
+      var statusEl = el("status"), substatus = el("substatus"), roomCodeEl = el("roomCode"), playerKey = el("playerKey");
+      var boardEl = el("board"), dropRow = el("dropRow"), banner = el("banner"), newRoundBtn = el("newRoundBtn");
+      var copyBtn = el("copyBtn"), leaveBtn = el("leaveBtn"), toastEl = el("toast");
+      var socket = null, room = "", topic = "", clientId = randomId(14), role = null;
+      var state = null, packetId = 1, buffer = new Uint8Array(0), mode = "", roomTimer = null, pingTimer = null;
+
+      function randomId(n) {
+        var chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789", bytes = new Uint8Array(n);
+        crypto.getRandomValues(bytes);
+        return Array.from(bytes, function (b) { return chars[b % chars.length]; }).join("");
+      }
+      function makeCode() { var s = randomId(8); return s.slice(0, 4) + "-" + s.slice(4); }
+      function cleanCode(v) {
+        var s = v.toUpperCase().replace(/[^A-Z2-9]/g, "").slice(0, 8);
+        return s.length > 4 ? s.slice(0, 4) + "-" + s.slice(4) : s;
+      }
+      function emptyBoard() { return Array(ROWS * COLS).fill(""); }
+      function utf8(s) { return new TextEncoder().encode(s); }
+      function str(bytes) { return new TextDecoder().decode(bytes); }
+      function remainingLength(n) {
+        var out = [];
+        do { var d = n % 128; n = Math.floor(n / 128); if (n > 0) d |= 128; out.push(d); } while (n > 0);
+        return out;
+      }
+      function packet(type, body, flags) {
+        var head = [((type << 4) | (flags || 0))].concat(remainingLength(body.length));
+        var out = new Uint8Array(head.length + body.length); out.set(head); out.set(body, head.length); return out;
+      }
+      function field(s) {
+        var b = utf8(s), out = new Uint8Array(b.length + 2); out[0] = b.length >> 8; out[1] = b.length & 255; out.set(b, 2); return out;
+      }
+      function concat(parts) {
+        var len = parts.reduce(function (n, p) { return n + p.length; }, 0), out = new Uint8Array(len), at = 0;
+        parts.forEach(function (p) { out.set(p, at); at += p.length; }); return out;
+      }
+      function connectPacket() {
+        var variable = concat([field("MQTT"), new Uint8Array([4, 2, 0, 30])]);
+        return packet(1, concat([variable, field("c4_" + clientId)]));
+      }
+      function subscribePacket() {
+        var id = packetId++ % 65535 || 1;
+        return packet(8, concat([new Uint8Array([id >> 8, id & 255]), field(topic), new Uint8Array([0])]), 2);
+      }
+      function publishPacket(payload, retained) { return packet(3, concat([field(topic), utf8(payload)]), retained ? 1 : 0); }
+      function send(bytes) { if (socket && socket.readyState === WebSocket.OPEN) socket.send(bytes); }
+
+      function openRoom(kind, desired) {
+        closeSocket();
+        mode = kind; room = desired || makeCode(); topic = PREFIX + room.replace("-", "");
+        role = null; state = null; buffer = new Uint8Array(0);
+        intro.classList.add("hidden"); lobbyArt.classList.add("hidden"); gameEl.classList.add("active"); page.classList.add("playing");
+        roomCodeEl.textContent = room; banner.classList.remove("show"); playerKey.innerHTML = "";
+        statusEl.textContent = "Connecting…"; substatus.textContent = "Opening the room"; renderBoard();
+        createBtn.disabled = true; joinBtn.disabled = true;
+        try {
+          socket = new WebSocket(BROKER, "mqtt"); socket.binaryType = "arraybuffer";
+          socket.onopen = function () { send(connectPacket()); };
+          socket.onmessage = function (e) { receive(new Uint8Array(e.data)); };
+          socket.onerror = function () { showError("Couldn’t reach the game relay. Check your connection and try again."); };
+          socket.onclose = function () {
+            clearInterval(pingTimer); pingTimer = null;
+            if (room && !banner.classList.contains("show")) showError("The connection closed. Leave the room and try again.");
+          };
+        } catch (e) { showError("This browser couldn’t open the game relay."); }
+      }
+      function receive(chunk) {
+        buffer = concat([buffer, chunk]); var offset = 0;
+        while (offset < buffer.length) {
+          if (offset + 2 > buffer.length) break;
+          var first = buffer[offset], multiplier = 1, len = 0, pos = offset + 1, digit;
+          do { if (pos >= buffer.length) return; digit = buffer[pos++]; len += (digit & 127) * multiplier; multiplier *= 128; } while (digit & 128);
+          if (pos + len > buffer.length) break;
+          handlePacket(first >> 4, buffer.slice(pos, pos + len)); offset = pos + len;
+        }
+        buffer = buffer.slice(offset);
+      }
+      function handlePacket(type, body) {
+        if (type === 2) {
+          if (body[1] !== 0) return showError("The relay refused the connection.");
+          send(subscribePacket());
+          clearInterval(pingTimer); pingTimer = setInterval(function () { send(packet(12, new Uint8Array(0))); }, 20000);
+        } else if (type === 9) {
+          statusEl.textContent = mode === "create" ? "Creating room…" : "Finding room…";
+          substatus.textContent = mode === "create" ? "Checking that your code is free" : "Looking for " + room;
+          clearTimeout(roomTimer);
+          roomTimer = setTimeout(function () {
+            if (mode === "create" && !state) createState();
+            else if (mode === "join" && !state) showError("No active game was found for that code.");
+          }, mode === "create" ? 750 : 3600);
+        } else if (type === 3) {
+          if (body.length < 2) return;
+          var n = (body[0] << 8) + body[1], payload = str(body.slice(2 + n));
+          try { acceptState(JSON.parse(payload)); } catch (e) {}
+        }
+      }
+      function createState() {
+        role = "R";
+        state = { v: 1, room: room, rev: 1, red: clientId, yellow: null, board: emptyBoard(), turn: "R", winner: null, winLine: [], round: 1, updated: Date.now() };
+        publishState(); updateGame();
+      }
+      function validState(next) {
+        return next && next.v === 1 && next.room === room && Array.isArray(next.board) && next.board.length === ROWS * COLS;
+      }
+      function acceptState(next) {
+        if (!validState(next)) return;
+        if (Date.now() - Number(next.updated || 0) > MAX_AGE) {
+          if (mode === "join" && !state) { clearTimeout(roomTimer); showError("That room has expired. Ask your friend for a new code."); }
+          return;
+        }
+        if (mode === "create" && !state && next.red && next.red !== clientId) {
+          clearTimeout(roomTimer); room = makeCode(); topic = PREFIX + room.replace("-", ""); roomCodeEl.textContent = room;
+          send(subscribePacket()); roomTimer = setTimeout(createState, 750); return;
+        }
+        if (state && Number(next.rev) < Number(state.rev)) return;
+        clearTimeout(roomTimer); state = next;
+        if (next.red === clientId) role = "R";
+        else if (next.yellow === clientId) role = "Y";
+        else if (mode === "join" && !next.yellow) {
+          role = "Y"; state.yellow = clientId; state.rev += 1; state.updated = Date.now(); publishState();
+        } else if (mode === "join" && next.yellow !== clientId) {
+          role = "spectator"; showError("This room already has two players.");
+        }
+        updateGame();
+      }
+      function publishState() { if (state) send(publishPacket(JSON.stringify(state), true)); }
+      function findWin(b, mark) {
+        var directions = [[0,1],[1,0],[1,1],[1,-1]];
+        for (var row = 0; row < ROWS; row++) {
+          for (var col = 0; col < COLS; col++) {
+            if (b[row * COLS + col] !== mark) continue;
+            for (var d = 0; d < directions.length; d++) {
+              var line = [], dr = directions[d][0], dc = directions[d][1];
+              for (var k = 0; k < 4; k++) {
+                var rr = row + dr * k, cc = col + dc * k;
+                if (rr < 0 || rr >= ROWS || cc < 0 || cc >= COLS || b[rr * COLS + cc] !== mark) break;
+                line.push(rr * COLS + cc);
+              }
+              if (line.length === 4) return line;
+            }
+          }
+        }
+        return [];
+      }
+      function play(column) {
+        if (!state || !role || role === "spectator" || state.winner || state.turn !== role || !state.yellow) return;
+        var index = -1;
+        for (var row = ROWS - 1; row >= 0; row--) { if (!state.board[row * COLS + column]) { index = row * COLS + column; break; } }
+        if (index < 0) { toast("That column is full"); return; }
+        state.board[index] = role;
+        var line = findWin(state.board, role);
+        if (line.length) { state.winner = role; state.winLine = line; }
+        else if (state.board.every(Boolean)) { state.winner = "draw"; state.winLine = []; }
+        else state.turn = role === "R" ? "Y" : "R";
+        state.rev += 1; state.updated = Date.now(); publishState(); updateGame();
+      }
+      function updateGame() {
+        if (!state) { renderBoard(); return; }
+        var hasOpponent = !!state.yellow;
+        newRoundBtn.disabled = !hasOpponent;
+        if (role === "R" || role === "Y") {
+          var colorName = role === "R" ? "red" : "yellow";
+          playerKey.innerHTML = '<span class="key-disc' + (role === "Y" ? ' yellow' : '') + '"></span><span>You’re playing ' + colorName + '</span>';
+        } else playerKey.innerHTML = "";
+        if (state.winner === "draw") { statusEl.textContent = "Board full. Draw."; substatus.textContent = "Round " + state.round + " ended evenly"; }
+        else if (state.winner) { statusEl.textContent = state.winner === role ? "Four in a row!" : "Your friend connected four."; substatus.textContent = "Round " + state.round + " is complete"; }
+        else if (!hasOpponent) { statusEl.textContent = "Waiting for a friend"; substatus.textContent = "Tap the invite code to copy it"; }
+        else if (role === "spectator") { statusEl.textContent = "Room is full"; substatus.textContent = "This game already has two players"; }
+        else if (state.turn === role) { statusEl.textContent = "Your drop"; substatus.textContent = "Choose any open column"; }
+        else { statusEl.textContent = "Their drop"; substatus.textContent = "Waiting for your friend"; }
+        renderBoard();
+      }
+      function renderBoard() {
+        var b = state ? state.board : emptyBoard();
+        boardEl.innerHTML = ""; dropRow.innerHTML = "";
+        for (var c = 0; c < COLS; c++) {
+          (function (column) {
+            var btn = document.createElement("button"); btn.type = "button"; btn.className = "drop"; btn.textContent = "↓";
+            btn.setAttribute("aria-label", "Drop a disc in column " + (column + 1));
+            var full = !!b[column];
+            btn.disabled = !state || !state.yellow || !!state.winner || state.turn !== role || role === "spectator" || full;
+            btn.addEventListener("click", function () { play(column); }); dropRow.appendChild(btn);
+          })(c);
+        }
+        for (var i = 0; i < ROWS * COLS; i++) {
+          var slot = document.createElement("div"), mark = b[i];
+          slot.className = "slot" + (mark === "R" ? " red" : mark === "Y" ? " yellow" : "");
+          if (state && state.winLine && state.winLine.indexOf(i) >= 0) slot.className += " win";
+          slot.setAttribute("role", "gridcell");
+          slot.setAttribute("aria-label", mark ? ((mark === "R" ? "Red" : "Yellow") + " disc") : "Empty slot");
+          boardEl.appendChild(slot);
+        }
+      }
+      function newRound() {
+        if (!state || !state.yellow) return;
+        state.board = emptyBoard(); state.winner = null; state.winLine = []; state.round += 1;
+        state.turn = state.round % 2 ? "R" : "Y"; state.rev += 1; state.updated = Date.now();
+        publishState(); updateGame();
+      }
+      function closeSocket() {
+        clearTimeout(roomTimer); clearInterval(pingTimer); pingTimer = null;
+        if (socket) { socket.onclose = null; try { socket.close(); } catch (e) {} socket = null; }
+      }
+      function leave() {
+        closeSocket(); room = ""; topic = ""; state = null; role = null; mode = "";
+        intro.classList.remove("hidden"); lobbyArt.classList.remove("hidden"); gameEl.classList.remove("active"); page.classList.remove("playing");
+        banner.classList.remove("show"); createBtn.disabled = false; joinBtn.disabled = false; codeInput.value = ""; playerKey.innerHTML = "";
+      }
+      function showError(message) { banner.textContent = message; banner.classList.add("show"); statusEl.textContent = "Couldn’t connect"; substatus.textContent = "Leave the room and try again"; }
+      var toastTimer;
+      function toast(message) { toastEl.textContent = message; toastEl.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(function () { toastEl.classList.remove("show"); }, 1800); }
+
+      codeInput.addEventListener("input", function () { codeInput.value = cleanCode(codeInput.value); });
+      codeInput.addEventListener("keydown", function (e) { if (e.key === "Enter") joinBtn.click(); });
+      createBtn.addEventListener("click", function () { openRoom("create"); });
+      joinBtn.addEventListener("click", function () {
+        var code = cleanCode(codeInput.value);
+        if (code.replace("-", "").length !== 8) { codeInput.focus(); toast("Enter all 8 characters"); return; }
+        openRoom("join", code);
+      });
+      copyBtn.addEventListener("click", function () {
+        if (!room) return;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(room).then(function () { toast("Invite code copied"); }, function () { toast("Code: " + room); });
+        } else toast("Code: " + room);
+      });
+      newRoundBtn.addEventListener("click", newRound);
+      leaveBtn.addEventListener("click", leave);
+      window.addEventListener("beforeunload", closeSocket);
+      renderBoard();
+    })();
+  </script>
+</body>
+</html>
