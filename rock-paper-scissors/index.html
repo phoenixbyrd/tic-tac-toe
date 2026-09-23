@@ -201,6 +201,7 @@
     .result-mark { font-size: 2.7rem; line-height: 1; font-weight: 800; color: var(--sun); }
     .result strong { display: block; }
     .result p { margin: 4px 0 0; opacity: .72; font-size: .83rem; }
+    .result[hidden] { display: none; }
     .battle {
       grid-column: 1 / -1;
       position: relative; height: 118px; margin-top: 6px;
@@ -307,7 +308,8 @@
       .symbol-stack { height: 225px; }
       .art-symbol { width: 116px; height: 116px; }
       .art-symbol svg { width: 64px; height: 64px; }
-      .game-head { grid-template-columns: 1fr auto; gap: 8px; }
+      .game-head { grid-template-columns: 1fr; gap: 10px; }
+      .room-actions { justify-content: space-between; }
       .room small { font-size: .7rem; }
       .room-code { font-size: .84rem; }
       .scorebar { gap: 6px; padding-inline: 11px; }
