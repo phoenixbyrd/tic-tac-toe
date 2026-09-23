@@ -1,0 +1,605 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <link rel="icon" href="data:," />
+  <title>Word Game</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --paper: #f5f1e8;
+      --ink: #17221b;
+      --muted: #617068;
+      --line: #c7ccc4;
+      --tile: #fffdf7;
+      --key: #d9ddd6;
+      --key-ink: #202922;
+      --green: #2f7850;
+      --gold: #c28a24;
+      --miss: #6c746f;
+      --focus: #b34a2c;
+      --shadow: rgba(39, 48, 42, .14);
+      --danger: #a63d2b;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --paper: #111713;
+        --ink: #f4f0e7;
+        --muted: #a9b3ab;
+        --line: #465048;
+        --tile: #1b231d;
+        --key: #39423b;
+        --key-ink: #f6f2ea;
+        --green: #3c8a5d;
+        --gold: #ba8325;
+        --miss: #555e58;
+        --focus: #ed7a55;
+        --shadow: rgba(0, 0, 0, .35);
+        --danger: #ff9274;
+      }
+    }
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      overflow-x: hidden;
+    }
+    button { font: inherit; color: inherit; }
+    .app {
+      width: min(100%, 680px);
+      min-height: 100svh;
+      margin: 0 auto;
+      padding: max(14px, env(safe-area-inset-top)) 16px max(18px, env(safe-area-inset-bottom));
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      gap: 10px;
+    }
+    .topline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 44px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 10px;
+    }
+    .round-meta {
+      display: flex;
+      align-items: baseline;
+      gap: 9px;
+    }
+    .round-label {
+      font-size: .72rem;
+      font-weight: 800;
+      letter-spacing: .11em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .round-number {
+      font: 700 1.1rem/1 Georgia, serif;
+      font-variant-numeric: tabular-nums;
+    }
+    .icon-button {
+      min-width: 44px;
+      height: 44px;
+      border: 0;
+      border-radius: 50%;
+      background: transparent;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      font-size: 1.25rem;
+    }
+    .icon-button:hover { background: color-mix(in srgb, var(--ink) 8%, transparent); }
+    .icon-button:focus-visible, .key:focus-visible, .primary:focus-visible, .secondary:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 2px;
+    }
+    .intro { text-align: center; padding: 3px 0 1px; }
+    h1 {
+      margin: 0;
+      font: 700 clamp(1.35rem, 4vw, 1.8rem)/1.15 Georgia, serif;
+      letter-spacing: -.02em;
+    }
+    .subhead {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: .92rem;
+    }
+    .game-area {
+      display: grid;
+      align-content: center;
+      justify-items: center;
+      min-height: 348px;
+      padding: 4px 0;
+    }
+    .board {
+      display: grid;
+      grid-template-rows: repeat(6, 1fr);
+      gap: 6px;
+      width: min(100%, 330px);
+      aspect-ratio: 5 / 6;
+    }
+    .row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+    .tile {
+      min-width: 0;
+      border: 2px solid var(--line);
+      background: var(--tile);
+      display: grid;
+      place-items: center;
+      font-size: clamp(1.45rem, 7vw, 2rem);
+      line-height: 1;
+      font-weight: 800;
+      text-transform: uppercase;
+      user-select: none;
+    }
+    .tile.filled { border-color: var(--muted); animation: press .09s ease-out; }
+    .tile.correct, .tile.present, .tile.absent {
+      color: #fff;
+      border-color: transparent;
+    }
+    .tile.correct { background: var(--green); }
+    .tile.present { background: var(--gold); }
+    .tile.absent { background: var(--miss); }
+    .tile.reveal { animation: flip .48s ease both; }
+    .row.shake { animation: shake .32s ease; }
+    .status {
+      min-height: 22px;
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: .88rem;
+      font-weight: 650;
+      text-align: center;
+    }
+    .status.error { color: var(--danger); }
+    .keyboard { display: grid; gap: 7px; width: 100%; }
+    .key-row { display: flex; justify-content: center; gap: 5px; }
+    .key {
+      border: 0;
+      border-radius: 5px;
+      height: clamp(46px, 7.3svh, 58px);
+      min-width: 0;
+      flex: 1 1 0;
+      max-width: 48px;
+      padding: 0;
+      background: var(--key);
+      color: var(--key-ink);
+      font-size: clamp(.76rem, 3vw, .95rem);
+      font-weight: 800;
+      text-transform: uppercase;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .key.wide { flex: 1.45 1 0; max-width: 68px; font-size: .69rem; }
+    .key.correct, .key.present, .key.absent { color: #fff; }
+    .key.correct { background: var(--green); }
+    .key.present { background: var(--gold); }
+    .key.absent { background: var(--miss); }
+    .key:active { transform: translateY(1px); filter: brightness(.94); }
+    .backspace-svg { width: 20px; height: 20px; display: block; margin: auto; }
+    .scrim {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: grid;
+      place-items: end center;
+      background: rgba(8, 13, 10, .58);
+      padding: 16px;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity .18s ease, visibility .18s ease;
+    }
+    .scrim.open { opacity: 1; visibility: visible; }
+    .sheet {
+      width: min(100%, 480px);
+      max-height: min(82svh, 650px);
+      overflow-y: auto;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 16px 16px 10px 10px;
+      box-shadow: 0 18px 60px var(--shadow);
+      padding: 22px;
+      transform: translateY(18px);
+      transition: transform .2s ease;
+    }
+    .scrim.open .sheet { transform: translateY(0); }
+    .sheet-head { display: flex; align-items: start; justify-content: space-between; gap: 14px; }
+    .sheet h2 { margin: 0; font: 700 1.45rem/1.15 Georgia, serif; }
+    .sheet p { line-height: 1.5; color: var(--muted); }
+    .example { display: flex; gap: 5px; margin: 16px 0 18px; }
+    .example .tile { width: 44px; height: 44px; font-size: 1.2rem; }
+    .legend { display: grid; gap: 12px; margin: 14px 0 22px; }
+    .legend-row { display: grid; grid-template-columns: 30px 1fr; gap: 10px; align-items: center; color: var(--muted); font-size: .9rem; }
+    .swatch { width: 30px; height: 30px; display: grid; place-items: center; color: #fff; font-weight: 800; }
+    .swatch.correct { background: var(--green); }
+    .swatch.present { background: var(--gold); }
+    .swatch.absent { background: var(--miss); }
+    .primary, .secondary {
+      min-height: 48px;
+      border-radius: 6px;
+      font-weight: 800;
+      cursor: pointer;
+      padding: 0 18px;
+    }
+    .primary { width: 100%; border: 0; background: var(--ink); color: var(--paper); }
+    .secondary { border: 1px solid var(--line); background: transparent; }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      margin: 20px 0;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+    .stat { padding: 15px 7px; text-align: center; }
+    .stat + .stat { border-left: 1px solid var(--line); }
+    .stat strong { display: block; font: 700 1.55rem/1 Georgia, serif; }
+    .stat span { display: block; margin-top: 5px; color: var(--muted); font-size: .72rem; }
+    .answer-word { margin: 12px 0 0; font-size: 1.05rem; }
+    .answer-word strong { color: var(--ink); letter-spacing: .08em; }
+    @keyframes press { 50% { transform: scale(.94); } }
+    @keyframes flip { 0% { transform: rotateX(0); } 50% { transform: rotateX(90deg); } 100% { transform: rotateX(0); } }
+    @keyframes shake { 20%, 60% { transform: translateX(-5px); } 40%, 80% { transform: translateX(5px); } }
+    @media (max-height: 700px) {
+      .app { gap: 5px; padding-top: max(8px, env(safe-area-inset-top)); }
+      .topline { min-height: 38px; padding-bottom: 5px; }
+      .icon-button { min-width: 40px; height: 40px; }
+      .subhead { margin-top: 2px; }
+      .game-area { min-height: 292px; }
+      .board { width: min(100%, 280px); }
+    }
+    @media (min-width: 700px) and (min-height: 760px) {
+      .app { padding-inline: 26px; gap: 14px; }
+      .board { width: 342px; }
+      .game-area { min-height: 430px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topline">
+      <div class="round-meta" aria-label="Current round">
+        <span class="round-label">Round</span>
+        <span class="round-number" id="roundNumber">01</span>
+      </div>
+      <button class="icon-button" id="helpButton" aria-label="How to play" title="How to play">?</button>
+    </header>
+
+    <section class="intro" aria-labelledby="gameHeading">
+      <h1 id="gameHeading">Find the five-letter word</h1>
+      <p class="subhead">You have six tries.</p>
+      <p class="status" id="status" role="status" aria-live="polite">Type a word to begin</p>
+    </section>
+
+    <section class="game-area" aria-label="Guessing board">
+      <div class="board" id="board" aria-label="Six rows of five letter tiles"></div>
+    </section>
+
+    <section class="keyboard" id="keyboard" aria-label="On-screen keyboard"></section>
+  </main>
+
+  <div class="scrim" id="helpScrim" aria-hidden="true">
+    <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+      <div class="sheet-head">
+        <div>
+          <h2 id="helpTitle">How to play</h2>
+          <p>Guess the hidden five-letter word in six tries. After each guess, the tiles show how close you are.</p>
+        </div>
+        <button class="icon-button" data-close="helpScrim" aria-label="Close instructions">×</button>
+      </div>
+      <div class="example" aria-label="Example guess: plant">
+        <span class="tile correct">P</span><span class="tile absent">L</span><span class="tile present">A</span><span class="tile absent">N</span><span class="tile absent">T</span>
+      </div>
+      <div class="legend">
+        <div class="legend-row"><span class="swatch correct">P</span><span><strong>Green:</strong> correct letter, correct spot.</span></div>
+        <div class="legend-row"><span class="swatch present">A</span><span><strong>Gold:</strong> in the word, different spot.</span></div>
+        <div class="legend-row"><span class="swatch absent">L</span><span><strong>Gray:</strong> not in the word.</span></div>
+      </div>
+      <button class="primary" data-close="helpScrim">Start playing</button>
+    </section>
+  </div>
+
+  <div class="scrim" id="resultScrim" aria-hidden="true">
+    <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
+      <div class="sheet-head">
+        <div>
+          <h2 id="resultTitle">Nicely done</h2>
+          <p class="answer-word" id="answerLine"></p>
+        </div>
+      </div>
+      <div class="stats" aria-label="Session statistics">
+        <div class="stat"><strong id="playedStat">1</strong><span>Played</span></div>
+        <div class="stat"><strong id="winStat">100%</strong><span>Solved</span></div>
+        <div class="stat"><strong id="streakStat">1</strong><span>Streak</span></div>
+      </div>
+      <button class="primary" id="nextRound">Play another word</button>
+    </section>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      var WORDS = [
+        'amber','apple','apron','badge','baker','beach','berry','blade','blaze','bloom',
+        'board','brave','bread','brick','bring','broom','cabin','candy','charm','chess',
+        'cider','clean','clock','cloud','coral','crane','crisp','dance','dream','drift',
+        'eagle','earth','ember','field','flame','flock','flour','focus','frame','fresh',
+        'frost','giant','glass','globe','grace','grain','grape','green','happy','heart',
+        'honey','horse','house','ivory','jelly','knack','lemon','light','lucky','maple',
+        'march','melon','metal','mirth','mouse','music','night','north','ocean','olive',
+        'orbit','paint','peach','pearl','piano','pilot','plant','pride','prize','quick',
+        'quiet','radio','raven','river','roast','robin','round','royal','scale','sharp',
+        'sheep','shore','smile','solar','sound','spark','spice','spoon','stone','storm',
+        'sugar','sunny','sweep','tiger','toast','trail','train','vivid','water','wheat',
+        'world','zebra'
+      ];
+      var ROWS = 6;
+      var COLS = 5;
+      var answer = '';
+      var guesses = Array.from({ length: ROWS }, function () { return []; });
+      var row = 0;
+      var finished = false;
+      var locked = false;
+      var round = 1;
+      var played = 0;
+      var wins = 0;
+      var streak = 0;
+      var keyRanks = {};
+      var previousAnswer = '';
+
+      var board = document.getElementById('board');
+      var keyboard = document.getElementById('keyboard');
+      var status = document.getElementById('status');
+      var resultScrim = document.getElementById('resultScrim');
+      var helpScrim = document.getElementById('helpScrim');
+      var lastFocused = null;
+
+      function createBoard() {
+        board.innerHTML = '';
+        for (var r = 0; r < ROWS; r++) {
+          var rowEl = document.createElement('div');
+          rowEl.className = 'row';
+          rowEl.dataset.row = r;
+          rowEl.setAttribute('aria-label', 'Guess ' + (r + 1));
+          for (var c = 0; c < COLS; c++) {
+            var tile = document.createElement('span');
+            tile.className = 'tile';
+            tile.dataset.row = r;
+            tile.dataset.col = c;
+            tile.setAttribute('aria-hidden', 'true');
+            rowEl.appendChild(tile);
+          }
+          board.appendChild(rowEl);
+        }
+      }
+
+      function createKeyboard() {
+        keyboard.innerHTML = '';
+        var layouts = [
+          ['q','w','e','r','t','y','u','i','o','p'],
+          ['a','s','d','f','g','h','j','k','l'],
+          ['enter','z','x','c','v','b','n','m','backspace']
+        ];
+        layouts.forEach(function (letters) {
+          var line = document.createElement('div');
+          line.className = 'key-row';
+          letters.forEach(function (letter) {
+            var button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'key' + ((letter === 'enter' || letter === 'backspace') ? ' wide' : '');
+            button.dataset.key = letter;
+            button.setAttribute('aria-label', letter === 'backspace' ? 'Delete letter' : letter === 'enter' ? 'Submit guess' : 'Letter ' + letter.toUpperCase());
+            if (letter === 'backspace') {
+              button.innerHTML = '<svg class="backspace-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M9.2 5H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9.2L2 12l7.2-7Zm3.1 4-1.4 1.4 1.6 1.6-1.6 1.6 1.4 1.4 1.6-1.6 1.6 1.6 1.4-1.4-1.6-1.6 1.6-1.6L15.5 9l-1.6 1.6L12.3 9Z" fill="currentColor"/></svg>';
+            } else {
+              button.textContent = letter === 'enter' ? 'Enter' : letter;
+            }
+            button.addEventListener('click', function () { handleKey(letter); });
+            line.appendChild(button);
+          });
+          keyboard.appendChild(line);
+        });
+      }
+
+      function chooseAnswer() {
+        var choices = WORDS.filter(function (word) { return word !== previousAnswer; });
+        answer = choices[Math.floor(Math.random() * choices.length)];
+        previousAnswer = answer;
+      }
+
+      function tileAt(r, c) {
+        return board.querySelector('[data-row="' + r + '"][data-col="' + c + '"]');
+      }
+
+      function setStatus(message, isError) {
+        status.textContent = message;
+        status.classList.toggle('error', Boolean(isError));
+      }
+
+      function renderCurrentRow() {
+        for (var c = 0; c < COLS; c++) {
+          var tile = tileAt(row, c);
+          var letter = guesses[row][c] || '';
+          tile.textContent = letter;
+          tile.classList.toggle('filled', Boolean(letter));
+        }
+      }
+
+      function handleKey(key) {
+        if (finished || locked || isModalOpen()) return;
+        if (key === 'enter') {
+          submitGuess();
+        } else if (key === 'backspace') {
+          if (guesses[row].length) {
+            guesses[row].pop();
+            renderCurrentRow();
+            setStatus('Keep going', false);
+          }
+        } else if (/^[a-z]$/.test(key) && guesses[row].length < COLS) {
+          guesses[row].push(key.toUpperCase());
+          renderCurrentRow();
+          setStatus(guesses[row].length === COLS ? 'Press Enter to check' : 'Keep going', false);
+        }
+      }
+
+      function submitGuess() {
+        if (guesses[row].length !== COLS) {
+          setStatus('Add ' + (COLS - guesses[row].length) + ' more ' + ((COLS - guesses[row].length) === 1 ? 'letter' : 'letters'), true);
+          shakeRow(row);
+          return;
+        }
+        locked = true;
+        var guess = guesses[row].join('').toLowerCase();
+        var result = scoreGuess(guess, answer);
+        revealRow(row, result, function () {
+          updateKeys(guess, result);
+          if (guess === answer) {
+            finishGame(true);
+          } else if (row === ROWS - 1) {
+            finishGame(false);
+          } else {
+            row += 1;
+            locked = false;
+            setStatus((ROWS - row) + ' ' + ((ROWS - row) === 1 ? 'try' : 'tries') + ' left', false);
+          }
+        });
+      }
+
+      function scoreGuess(guess, target) {
+        var result = Array(COLS).fill('absent');
+        var remaining = target.split('');
+        var chars = guess.split('');
+        for (var i = 0; i < COLS; i++) {
+          if (chars[i] === remaining[i]) {
+            result[i] = 'correct';
+            remaining[i] = null;
+            chars[i] = null;
+          }
+        }
+        for (var j = 0; j < COLS; j++) {
+          if (chars[j] === null) continue;
+          var found = remaining.indexOf(chars[j]);
+          if (found !== -1) {
+            result[j] = 'present';
+            remaining[found] = null;
+          }
+        }
+        return result;
+      }
+
+      function revealRow(rowIndex, result, done) {
+        var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var delay = reduced ? 0 : 115;
+        result.forEach(function (state, index) {
+          window.setTimeout(function () {
+            var tile = tileAt(rowIndex, index);
+            tile.classList.remove('filled');
+            tile.classList.add(state, 'reveal');
+            tile.setAttribute('aria-label', guesses[rowIndex][index] + ', ' + state);
+          }, delay * index);
+        });
+        window.setTimeout(done, delay * (COLS - 1) + (reduced ? 5 : 520));
+      }
+
+      function updateKeys(guess, result) {
+        var rank = { absent: 1, present: 2, correct: 3 };
+        guess.split('').forEach(function (letter, index) {
+          var state = result[index];
+          if (!keyRanks[letter] || rank[state] > rank[keyRanks[letter]]) {
+            keyRanks[letter] = state;
+            var keyEl = keyboard.querySelector('[data-key="' + letter + '"]');
+            if (keyEl) {
+              keyEl.classList.remove('absent', 'present', 'correct');
+              keyEl.classList.add(state);
+            }
+          }
+        });
+      }
+
+      function shakeRow(rowIndex) {
+        var el = board.querySelector('.row[data-row="' + rowIndex + '"]');
+        el.classList.remove('shake');
+        void el.offsetWidth;
+        el.classList.add('shake');
+      }
+
+      function finishGame(won) {
+        finished = true;
+        locked = false;
+        played += 1;
+        if (won) { wins += 1; streak += 1; } else { streak = 0; }
+        setStatus(won ? 'Solved in ' + (row + 1) + ((row === 0) ? ' try' : ' tries') : 'The word was ' + answer.toUpperCase(), false);
+        document.getElementById('resultTitle').textContent = won ? (row < 2 ? 'Sharp work' : 'Nicely done') : 'Next one’s yours';
+        document.getElementById('answerLine').innerHTML = 'The word was <strong>' + answer.toUpperCase() + '</strong>';
+        document.getElementById('playedStat').textContent = played;
+        document.getElementById('winStat').textContent = Math.round((wins / played) * 100) + '%';
+        document.getElementById('streakStat').textContent = streak;
+        window.setTimeout(function () { openModal(resultScrim); }, 700);
+      }
+
+      function newRound() {
+        closeModal(resultScrim, false);
+        round += 1;
+        document.getElementById('roundNumber').textContent = String(round).padStart(2, '0');
+        guesses = Array.from({ length: ROWS }, function () { return []; });
+        row = 0;
+        finished = false;
+        locked = false;
+        keyRanks = {};
+        chooseAnswer();
+        createBoard();
+        createKeyboard();
+        setStatus('Type a word to begin', false);
+      }
+
+      function isModalOpen() { return document.querySelector('.scrim.open') !== null; }
+
+      function openModal(modal) {
+        lastFocused = document.activeElement;
+        modal.classList.add('open');
+        modal.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+        var focusable = modal.querySelector('button');
+        if (focusable) focusable.focus();
+      }
+
+      function closeModal(modal, restore) {
+        modal.classList.remove('open');
+        modal.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = '';
+        if (restore !== false && lastFocused) lastFocused.focus();
+      }
+
+      document.getElementById('helpButton').addEventListener('click', function () { openModal(helpScrim); });
+      document.querySelectorAll('[data-close]').forEach(function (button) {
+        button.addEventListener('click', function () { closeModal(document.getElementById(button.dataset.close)); });
+      });
+      [helpScrim, resultScrim].forEach(function (modal) {
+        modal.addEventListener('click', function (event) { if (event.target === modal && modal === helpScrim) closeModal(modal); });
+      });
+      document.getElementById('nextRound').addEventListener('click', newRound);
+      document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && helpScrim.classList.contains('open')) { closeModal(helpScrim); return; }
+        if (isModalOpen()) return;
+        var key = event.key.toLowerCase();
+        if (key === 'backspace' || key === 'enter' || /^[a-z]$/.test(key)) {
+          event.preventDefault();
+          handleKey(key);
+        }
+      });
+
+      createBoard();
+      createKeyboard();
+      chooseAnswer();
+    }());
+  </script>
+</body>
+</html>
