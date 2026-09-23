@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <link rel="icon" href="data:," />
+  <title>Minesweeper</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=Nunito+Sans:opsz,wght@6..12,600;6..12,700;6..12,800&display=swap');
+
+    :root {
+      color-scheme: light dark;
+      --bg: #e9eef1;
+      --surface: #f8fafb;
+      --panel: #d8e0e4;
+      --panel-deep: #c4cfd5;
+      --ink: #172329;
+      --muted: #55666f;
+      --line: #a9b7be;
+      --cell: #cbd6db;
+      --cell-hi: #eef3f5;
+      --cell-lo: #91a1a9;
+      --open: #eef2f3;
+      --accent: #d34935;
+      --accent-dark: #9e2c1d;
+      --safe: #19705c;
+      --one: #1769aa;
+      --two: #247245;
+      --three: #bb3828;
+      --four: #583e9e;
+      --five: #8c302a;
+      --six: #167d83;
+      --seven: #202a2f;
+      --eight: #68757b;
+      --shadow: rgba(20, 35, 43, .16);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #11181c;
+        --surface: #1c272c;
+        --panel: #26343a;
+        --panel-deep: #34444b;
+        --ink: #f0f4f5;
+        --muted: #b4c1c7;
+        --line: #43555e;
+        --cell: #34464e;
+        --cell-hi: #566971;
+        --cell-lo: #172228;
+        --open: #202c31;
+        --accent: #f36a55;
+        --accent-dark: #d64d38;
+        --safe: #65d1b2;
+        --one: #73b8f1;
+        --two: #72d496;
+        --three: #ff8371;
+        --four: #b4a2ff;
+        --five: #f0a098;
+        --six: #65ced3;
+        --seven: #f0f4f5;
+        --eight: #aab7bd;
+        --shadow: rgba(0, 0, 0, .35);
+      }
+    }
+
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; }
+    body {
+      margin: 0;
+      background:
+        linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px),
+        var(--bg);
+      background-size: 24px 24px;
+      color: var(--ink);
+      font-family: "Nunito Sans", sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      overscroll-behavior: none;
+    }
+
+    button, select { font: inherit; }
+    button { color: inherit; }
+
+    .game-shell {
+      width: min(100%, 760px);
+      min-height: 100dvh;
+      margin: 0 auto;
+      padding: max(18px, env(safe-area-inset-top)) clamp(12px, 3vw, 28px) max(24px, env(safe-area-inset-bottom));
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .topline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 0 auto 12px;
+      width: min(100%, 620px);
+    }
+
+    .difficulty {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: .82rem;
+      font-weight: 800;
+    }
+
+    select {
+      min-height: 42px;
+      padding: 0 34px 0 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--ink);
+      background: var(--surface);
+      font-weight: 800;
+    }
+
+    .help-button {
+      width: 42px;
+      height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      background: var(--surface);
+      font: 800 1rem/1 "IBM Plex Mono", monospace;
+      cursor: pointer;
+    }
+
+    .machine {
+      width: min(100%, 620px);
+      margin: 0 auto;
+      padding: clamp(12px, 2.5vw, 20px);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: 0 16px 38px var(--shadow), inset 0 1px rgba(255,255,255,.55);
+    }
+
+    .dashboard {
+      min-height: 74px;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      margin-bottom: 14px;
+      border: 1px solid var(--cell-lo);
+      background: var(--panel-deep);
+      box-shadow: inset 0 2px 4px var(--shadow);
+    }
+
+    .meter { min-width: 0; }
+    .meter:last-child { text-align: right; }
+    .meter-label {
+      display: block;
+      margin-bottom: 3px;
+      color: var(--muted);
+      font-size: .68rem;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .meter-value {
+      display: inline-block;
+      min-width: 3ch;
+      font: 600 clamp(1.25rem, 4vw, 1.65rem)/1 "IBM Plex Mono", monospace;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .reset {
+      width: 50px;
+      height: 50px;
+      padding: 0;
+      display: grid;
+      place-items: center;
+      border: 2px solid var(--cell-lo);
+      border-top-color: var(--cell-hi);
+      border-left-color: var(--cell-hi);
+      border-radius: 8px;
+      background: var(--cell);
+      cursor: pointer;
+      box-shadow: 0 2px 3px var(--shadow);
+    }
+    .reset:active { transform: translateY(1px); box-shadow: none; }
+    .face { width: 28px; height: 28px; }
+
+    .board-wrap {
+      position: relative;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+    }
+
+    .board {
+      --cols: 9;
+      display: grid;
+      grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+      width: min(100%, calc(var(--cols) * 38px));
+      aspect-ratio: 1;
+      border: 3px solid var(--cell-lo);
+      border-right-color: var(--cell-hi);
+      border-bottom-color: var(--cell-hi);
+      background: var(--cell-lo);
+      touch-action: manipulation;
+      user-select: none;
+    }
+
+    .cell {
+      position: relative;
+      min-width: 0;
+      padding: 0;
+      border: 2px solid var(--cell-hi);
+      border-right-color: var(--cell-lo);
+      border-bottom-color: var(--cell-lo);
+      border-radius: 0;
+      background: var(--cell);
+      display: grid;
+      place-items: center;
+      font: 800 clamp(.68rem, 3.2vw, 1rem)/1 "IBM Plex Mono", monospace;
+      cursor: pointer;
+      outline: none;
+    }
+    .cell:hover:not(.open) { filter: brightness(1.04); }
+    .cell:focus-visible { z-index: 2; box-shadow: inset 0 0 0 3px var(--accent); }
+    .cell.open {
+      border: 1px solid var(--line);
+      background: var(--open);
+      cursor: default;
+    }
+    .cell.mine.open { background: color-mix(in srgb, var(--accent) 36%, var(--open)); }
+    .cell.exploded { background: var(--accent) !important; }
+    .cell.flagged::before {
+      content: "";
+      width: 45%;
+      height: 48%;
+      background: var(--accent);
+      clip-path: polygon(15% 0, 100% 20%, 18% 58%, 18% 100%, 0 100%, 0 0);
+      filter: drop-shadow(1px 1px 0 var(--accent-dark));
+    }
+    .cell.mine.open::before {
+      content: "";
+      width: 48%;
+      height: 48%;
+      border-radius: 50%;
+      background: var(--ink);
+      box-shadow: 0 -.32em var(--ink), 0 .32em var(--ink), .32em 0 var(--ink), -.32em 0 var(--ink);
+      transform: scale(.58);
+    }
+    .cell.wrong::after {
+      content: "×";
+      position: absolute;
+      color: var(--accent);
+      font-size: 1.5em;
+    }
+    .n1{color:var(--one)} .n2{color:var(--two)} .n3{color:var(--three)} .n4{color:var(--four)}
+    .n5{color:var(--five)} .n6{color:var(--six)} .n7{color:var(--seven)} .n8{color:var(--eight)}
+
+    .tools {
+      width: min(100%, 620px);
+      margin: 12px auto 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .flag-toggle {
+      min-height: 46px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      padding: 0 15px;
+      background: var(--surface);
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 2px 5px var(--shadow);
+    }
+    .flag-toggle[aria-pressed="true"] {
+      color: #fff;
+      background: var(--accent);
+      border-color: var(--accent-dark);
+    }
+    .hint { color: var(--muted); font-size: .78rem; font-weight: 700; text-align: right; }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 10;
+      display: none;
+      place-items: center;
+      padding: 20px;
+      background: rgba(11, 17, 20, .68);
+    }
+    .modal-backdrop.show { display: grid; }
+    .modal {
+      width: min(100%, 390px);
+      padding: 25px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+    }
+    .modal h2 { margin: 0 0 8px; font-size: 1.5rem; }
+    .modal p { margin: 0 0 16px; color: var(--muted); line-height: 1.55; }
+    .modal ol { margin: 0 0 20px; padding-left: 1.2rem; color: var(--muted); line-height: 1.55; }
+    .modal li + li { margin-top: 7px; }
+    .modal-actions { display: flex; gap: 9px; justify-content: flex-end; }
+    .modal button {
+      min-height: 44px;
+      padding: 0 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .modal .primary { color: white; background: var(--safe); border-color: var(--safe); }
+
+    .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+
+    @media (max-width: 480px) {
+      .game-shell { justify-content: flex-start; padding-inline: 8px; }
+      .topline, .tools { padding-inline: 4px; }
+      .machine { border-radius: 10px; padding: 10px; }
+      .dashboard { min-height: 64px; margin-bottom: 10px; }
+      .reset { width: 46px; height: 46px; }
+      .hint { max-width: 145px; }
+      .difficulty > span { display: none; }
+    }
+
+    @media (max-height: 670px) and (orientation: landscape) {
+      .game-shell { justify-content: flex-start; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="game-shell">
+    <div class="topline">
+      <label class="difficulty"><span>Field size</span>
+        <select id="difficulty" aria-label="Difficulty">
+          <option value="beginner">Beginner · 9 × 9</option>
+          <option value="intermediate">Intermediate · 12 × 12</option>
+          <option value="expert">Expert · 16 × 16</option>
+        </select>
+      </label>
+      <button class="help-button" id="helpButton" type="button" aria-label="How to play">?</button>
+    </div>
+
+    <section class="machine" aria-label="Minesweeper game">
+      <div class="dashboard">
+        <div class="meter">
+          <span class="meter-label">Mines</span>
+          <span class="meter-value" id="mineCount">010</span>
+        </div>
+        <button class="reset" id="resetButton" type="button" aria-label="Start a new game">
+          <svg class="face" viewBox="0 0 32 32" aria-hidden="true">
+            <circle cx="16" cy="16" r="13" fill="#f4c84d" stroke="#4f4526" stroke-width="2"/>
+            <circle cx="11" cy="13" r="1.8" fill="#2b2920"/><circle cx="21" cy="13" r="1.8" fill="#2b2920"/>
+            <path id="mouth" d="M10 20 Q16 25 22 20" fill="none" stroke="#2b2920" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <div class="meter">
+          <span class="meter-label">Time</span>
+          <span class="meter-value" id="timer">000</span>
+        </div>
+      </div>
+      <div class="board-wrap">
+        <div class="board" id="board" role="grid" aria-label="Minefield"></div>
+      </div>
+    </section>
+
+    <div class="tools">
+      <button class="flag-toggle" id="flagToggle" type="button" aria-pressed="false">⚑ Flag mode</button>
+      <span class="hint">Tap to uncover · hold to flag</span>
+    </div>
+    <div id="announcer" class="sr-only" aria-live="polite"></div>
+  </main>
+
+  <div class="modal-backdrop" id="helpModal" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+    <div class="modal">
+      <h2 id="helpTitle">Clear the field</h2>
+      <ol>
+        <li>Uncover every square that doesn’t contain a mine.</li>
+        <li>A number tells you how many mines touch that square.</li>
+        <li>Hold a square, right-click it, or switch on Flag mode to mark a mine.</li>
+      </ol>
+      <div class="modal-actions"><button id="closeHelp" class="primary" type="button">Got it</button></div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="resultModal" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
+    <div class="modal">
+      <h2 id="resultTitle">Field cleared</h2>
+      <p id="resultText"></p>
+      <div class="modal-actions">
+        <button id="closeResult" type="button">View board</button>
+        <button id="playAgain" class="primary" type="button">Play again</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+      var presets = {
+        beginner: { rows: 9, cols: 9, mines: 10 },
+        intermediate: { rows: 12, cols: 12, mines: 20 },
+        expert: { rows: 16, cols: 16, mines: 40 }
+      };
+      var boardEl = document.getElementById('board');
+      var mineCountEl = document.getElementById('mineCount');
+      var timerEl = document.getElementById('timer');
+      var difficultyEl = document.getElementById('difficulty');
+      var flagToggle = document.getElementById('flagToggle');
+      var resetButton = document.getElementById('resetButton');
+      var mouth = document.getElementById('mouth');
+      var announcer = document.getElementById('announcer');
+      var helpModal = document.getElementById('helpModal');
+      var resultModal = document.getElementById('resultModal');
+      var cfg, cells, started, ended, flags, opened, seconds, timerId, flagMode;
+      var longPressTimer = null;
+      var longPressed = false;
+
+      function pad(n) { return String(Math.max(-99, Math.min(999, n))).padStart(3, '0'); }
+      function index(r, c) { return r * cfg.cols + c; }
+      function neighbors(i) {
+        var r = Math.floor(i / cfg.cols), c = i % cfg.cols, list = [];
+        for (var dr = -1; dr <= 1; dr++) for (var dc = -1; dc <= 1; dc++) {
+          if (!dr && !dc) continue;
+          var nr = r + dr, nc = c + dc;
+          if (nr >= 0 && nr < cfg.rows && nc >= 0 && nc < cfg.cols) list.push(index(nr, nc));
+        }
+        return list;
+      }
+
+      function newGame() {
+        clearInterval(timerId);
+        cfg = presets[difficultyEl.value];
+        cells = Array.from({ length: cfg.rows * cfg.cols }, function (_, i) {
+          return { i: i, mine: false, open: false, flag: false, count: 0 };
+        });
+        started = false; ended = false; flags = 0; opened = 0; seconds = 0; flagMode = false;
+        timerEl.textContent = '000';
+        mineCountEl.textContent = pad(cfg.mines);
+        flagToggle.setAttribute('aria-pressed', 'false');
+        boardEl.style.setProperty('--cols', cfg.cols);
+        boardEl.innerHTML = '';
+        cells.forEach(function (cell) {
+          var button = document.createElement('button');
+          button.className = 'cell';
+          button.type = 'button';
+          button.setAttribute('role', 'gridcell');
+          button.setAttribute('aria-label', 'Covered square');
+          button.dataset.i = cell.i;
+          boardEl.appendChild(button);
+        });
+        setFace('smile');
+        announcer.textContent = 'New ' + difficultyEl.options[difficultyEl.selectedIndex].text + ' game';
+      }
+
+      function placeMines(safe) {
+        var forbidden = new Set([safe].concat(neighbors(safe)));
+        var pool = cells.map(function (_, i) { return i; }).filter(function (i) { return !forbidden.has(i); });
+        for (var i = pool.length - 1; i > 0; i--) {
+          var j = Math.floor(Math.random() * (i + 1));
+          var temp = pool[i]; pool[i] = pool[j]; pool[j] = temp;
+        }
+        pool.slice(0, cfg.mines).forEach(function (i) { cells[i].mine = true; });
+        cells.forEach(function (cell) {
+          cell.count = neighbors(cell.i).filter(function (n) { return cells[n].mine; }).length;
+        });
+      }
+
+      function start(safe) {
+        placeMines(safe); started = true;
+        timerId = setInterval(function () {
+          seconds = Math.min(seconds + 1, 999);
+          timerEl.textContent = pad(seconds);
+          if (seconds === 999) clearInterval(timerId);
+        }, 1000);
+      }
+
+      function renderCell(i) {
+        var cell = cells[i], el = boardEl.children[i];
+        el.className = 'cell'; el.textContent = '';
+        if (cell.open) {
+          el.classList.add('open'); el.disabled = true;
+          if (cell.mine) { el.classList.add('mine'); el.setAttribute('aria-label', 'Mine'); }
+          else if (cell.count) {
+            el.textContent = cell.count; el.classList.add('n' + cell.count);
+            el.setAttribute('aria-label', cell.count + ' adjacent ' + (cell.count === 1 ? 'mine' : 'mines'));
+          } else el.setAttribute('aria-label', 'Empty square');
+        } else if (cell.flag) {
+          el.classList.add('flagged'); el.setAttribute('aria-label', 'Flagged square');
+        } else el.setAttribute('aria-label', 'Covered square');
+      }
+
+      function reveal(i) {
+        if (ended || cells[i].flag || cells[i].open) return;
+        if (!started) start(i);
+        if (cells[i].mine) { cells[i].open = true; lose(i); return; }
+        var queue = [i], seen = new Set();
+        while (queue.length) {
+          var current = queue.shift();
+          if (seen.has(current)) continue;
+          seen.add(current);
+          var cell = cells[current];
+          if (cell.open || cell.flag || cell.mine) continue;
+          cell.open = true; opened++; renderCell(current);
+          if (cell.count === 0) neighbors(current).forEach(function (n) { if (!seen.has(n)) queue.push(n); });
+        }
+        if (opened === cells.length - cfg.mines) win();
+      }
+
+      function toggleFlag(i) {
+        if (ended || cells[i].open) return;
+        var cell = cells[i];
+        if (!cell.flag && flags >= cfg.mines) {
+          announcer.textContent = 'All flags are in use'; return;
+        }
+        cell.flag = !cell.flag; flags += cell.flag ? 1 : -1;
+        mineCountEl.textContent = pad(cfg.mines - flags);
+        renderCell(i);
+      }
+
+      function lose(hit) {
+        ended = true; clearInterval(timerId); setFace('sad');
+        cells.forEach(function (cell) {
+          if (cell.mine) { cell.open = true; renderCell(cell.i); }
+          else if (cell.flag) { boardEl.children[cell.i].classList.add('wrong'); }
+        });
+        boardEl.children[hit].classList.add('exploded');
+        showResult(false);
+      }
+
+      function win() {
+        ended = true; clearInterval(timerId); setFace('cool');
+        cells.forEach(function (cell) {
+          if (cell.mine && !cell.flag) { cell.flag = true; renderCell(cell.i); }
+        });
+        flags = cfg.mines; mineCountEl.textContent = '000';
+        showResult(true);
+      }
+
+      function showResult(won) {
+        document.getElementById('resultTitle').textContent = won ? 'Field cleared!' : 'Mine triggered';
+        document.getElementById('resultText').textContent = won
+          ? 'You found all ' + cfg.mines + ' mines in ' + seconds + ' ' + (seconds === 1 ? 'second' : 'seconds') + '.'
+          : 'That field still has secrets. Try a fresh layout.';
+        resultModal.classList.add('show');
+        document.getElementById('playAgain').focus();
+      }
+
+      function setFace(kind) {
+        if (kind === 'sad') mouth.setAttribute('d', 'M10 23 Q16 17 22 23');
+        else if (kind === 'cool') mouth.setAttribute('d', 'M10 20 Q16 25 22 20');
+        else mouth.setAttribute('d', 'M10 20 Q16 25 22 20');
+      }
+
+      boardEl.addEventListener('click', function (event) {
+        var el = event.target.closest('.cell');
+        if (!el || longPressed) { longPressed = false; return; }
+        var i = Number(el.dataset.i);
+        if (flagMode) toggleFlag(i); else reveal(i);
+      });
+      boardEl.addEventListener('contextmenu', function (event) {
+        var el = event.target.closest('.cell'); if (!el) return;
+        event.preventDefault(); toggleFlag(Number(el.dataset.i));
+      });
+      boardEl.addEventListener('pointerdown', function (event) {
+        var el = event.target.closest('.cell'); if (!el || event.pointerType === 'mouse') return;
+        longPressed = false;
+        longPressTimer = setTimeout(function () {
+          longPressed = true; toggleFlag(Number(el.dataset.i));
+          if (navigator.vibrate) navigator.vibrate(25);
+        }, 520);
+      });
+      ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (type) {
+        boardEl.addEventListener(type, function () { clearTimeout(longPressTimer); });
+      });
+      boardEl.addEventListener('keydown', function (event) {
+        var el = event.target.closest('.cell'); if (!el) return;
+        if (event.key === 'f' || event.key === 'F') { event.preventDefault(); toggleFlag(Number(el.dataset.i)); }
+      });
+      flagToggle.addEventListener('click', function () {
+        flagMode = !flagMode; flagToggle.setAttribute('aria-pressed', String(flagMode));
+        announcer.textContent = flagMode ? 'Flag mode on' : 'Flag mode off';
+      });
+      resetButton.addEventListener('click', newGame);
+      difficultyEl.addEventListener('change', newGame);
+      document.getElementById('helpButton').addEventListener('click', function () { helpModal.classList.add('show'); document.getElementById('closeHelp').focus(); });
+      document.getElementById('closeHelp').addEventListener('click', function () { helpModal.classList.remove('show'); document.getElementById('helpButton').focus(); });
+      document.getElementById('closeResult').addEventListener('click', function () { resultModal.classList.remove('show'); resetButton.focus(); });
+      document.getElementById('playAgain').addEventListener('click', function () { resultModal.classList.remove('show'); newGame(); resetButton.focus(); });
+      [helpModal, resultModal].forEach(function (modal) {
+        modal.addEventListener('click', function (event) { if (event.target === modal) modal.classList.remove('show'); });
+      });
+      document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') { helpModal.classList.remove('show'); resultModal.classList.remove('show'); }
+      });
+      newGame();
+    }());
+  </script>
+</body>
+</html>
