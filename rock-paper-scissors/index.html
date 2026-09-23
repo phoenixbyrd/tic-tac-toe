@@ -199,6 +199,87 @@
     .result-mark { font-size: 2.7rem; line-height: 1; font-weight: 800; color: var(--sun); }
     .result strong { display: block; }
     .result p { margin: 4px 0 0; opacity: .72; font-size: .83rem; }
+    .battle {
+      grid-column: 1 / -1;
+      position: relative; height: 118px; margin-top: 6px;
+      border-radius: 10px; overflow: hidden;
+      background: color-mix(in srgb, var(--panel) 13%, transparent);
+    }
+    .fighter {
+      position: absolute; top: 50%; width: 62px; height: 62px; margin-top: -31px;
+      display: grid; place-items: center; border-radius: 50%;
+      background: var(--panel); border: 2px solid var(--line); color: var(--teal);
+    }
+    .fighter svg { width: 38px; height: 38px; display: block; fill: none; stroke: currentColor; stroke-width: 2.15; stroke-linecap: round; stroke-linejoin: round; }
+    .fighter.winner { color: var(--coral); }
+    /* scissors cuts paper */
+    .battle.cut .fighter.winner { left: 50%; margin-left: -74px; animation: snip 1.15s ease-in-out .2s 1; }
+    .battle.cut .fighter.loser { left: 50%; margin-left: 12px; animation: paperWobble 1.15s ease-in-out .2s 1; }
+    .battle.cut .fighter.loser::after {
+      content: ""; position: absolute; left: 6px; right: 6px; top: 50%; height: 3px; margin-top: -1.5px;
+      background: var(--coral); border-radius: 2px;
+      transform: rotate(-28deg) scaleX(0);
+      animation: slashIn .3s ease-out .62s forwards;
+    }
+    @keyframes snip {
+      0%, 100% { transform: translateX(0) rotate(0deg); }
+      18% { transform: translateX(20px) rotate(-14deg); }
+      36% { transform: translateX(0) rotate(0deg); }
+      54% { transform: translateX(20px) rotate(-14deg); }
+      72%, 100% { transform: translateX(0) rotate(0deg); }
+    }
+    @keyframes slashIn { to { transform: rotate(-28deg) scaleX(1); } }
+    @keyframes paperWobble {
+      0%, 50% { transform: translateX(0) rotate(0deg); }
+      62% { transform: translateX(7px) rotate(8deg); }
+      76% { transform: translateX(-5px) rotate(-5deg); }
+      90%, 100% { transform: translateX(0) rotate(0deg); }
+    }
+    /* rock smashes scissors */
+    .battle.smash { animation: stageShake .45s linear .95s 1; }
+    .battle.smash .fighter.winner { left: 50%; top: 2px; margin: 0 0 0 -31px; animation: slam .95s cubic-bezier(.55,.06,.75,.4) .25s forwards; }
+    .battle.smash .fighter.loser { left: 50%; top: auto; bottom: 2px; margin: 0 0 0 -31px; animation: squash .95s ease .25s 1; }
+    .battle.smash::after {
+      content: "\2726"; position: absolute; left: 50%; top: 58%; z-index: 3;
+      font-size: 1.9rem; line-height: 1; color: var(--sun); opacity: 0;
+      transform: translate(-50%, -50%) scale(.3);
+      animation: burst .55s ease-out .93s forwards;
+    }
+    @keyframes slam {
+      0% { transform: translateY(0); }
+      38% { transform: translateY(-16px); }
+      72% { transform: translateY(50px); }
+      86% { transform: translateY(42px); }
+      100% { transform: translateY(46px); }
+    }
+    @keyframes squash {
+      0%, 68% { transform: scale(1, 1); }
+      78% { transform: scale(1.18, .72); }
+      90% { transform: scale(.94, 1.06); }
+      100% { transform: scale(1, 1); }
+    }
+    @keyframes stageShake {
+      0%, 100% { transform: translate(0, 0); }
+      20% { transform: translate(-4px, 2px); }
+      40% { transform: translate(4px, -2px); }
+      60% { transform: translate(-3px, 1px); }
+      80% { transform: translate(3px, -1px); }
+    }
+    @keyframes burst {
+      0% { opacity: 1; transform: translate(-50%, -50%) scale(.3) rotate(0deg); }
+      100% { opacity: 0; transform: translate(-50%, -50%) scale(2.4) rotate(40deg); }
+    }
+    /* paper covers rock */
+    .battle.cover .fighter.loser { left: 50%; top: 50%; margin: -31px 0 0 -31px; animation: rockSink 1.25s ease .2s forwards; }
+    .battle.cover .fighter.winner { left: 50%; top: 50%; margin: -31px 0 0 -93px; z-index: 2; animation: coverSlide 1.25s cubic-bezier(.6,0,.4,1) .2s forwards; }
+    @keyframes coverSlide {
+      0% { margin-left: -93px; }
+      55%, 100% { margin-left: -31px; }
+    }
+    @keyframes rockSink {
+      0%, 50% { transform: scale(1); opacity: 1; }
+      100% { transform: scale(.5); opacity: .2; }
+    }
     .game-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 22px; }
     .toast {
       position: fixed; left: 50%; bottom: max(20px, env(safe-area-inset-bottom)); z-index: 5;
@@ -524,11 +605,27 @@
           choicesEl.appendChild(btn);
         });
       }
+      var lastResultKey = "";
       function renderResult() {
-        if (!state || !state.resolved) { resultEl.hidden = true; resultEl.innerHTML = ""; return; }
+        if (!state || !state.resolved) {
+          if (lastResultKey !== "") { lastResultKey = ""; resultEl.hidden = true; resultEl.innerHTML = ""; }
+          return;
+        }
         var info = resultCopy(), winner = matchWinner();
+        var key = state.round + "|" + state.hm + state.gm + "|" + (winner || "");
+        if (key === lastResultKey) return;
+        lastResultKey = key;
+        var battle = "";
+        if (state.hm !== state.gm) {
+          var winnerMove = BEATS[state.hm] === state.gm ? state.hm : state.gm;
+          var loserMove = winnerMove === state.hm ? state.gm : state.hm;
+          var kind = winnerMove === "s" ? "cut" : winnerMove === "r" ? "smash" : "cover";
+          battle = '<div class="battle ' + kind + '" aria-hidden="true">' +
+            '<div class="fighter winner">' + icon(winnerMove) + '</div>' +
+            '<div class="fighter loser">' + icon(loserMove) + '</div></div>';
+        }
         resultEl.hidden = false;
-        resultEl.innerHTML = '<div class="result-mark">' + (winner ? (winner === role ? "W" : "L") : state.hm === state.gm ? "=" : "+1") + '</div><div><strong>' + (winner ? (winner === role ? "Match won" : "Match lost") : info.title) + '</strong><p>' + info.detail + '</p></div>';
+        resultEl.innerHTML = '<div class="result-mark">' + (winner ? (winner === role ? "W" : "L") : state.hm === state.gm ? "=" : "+1") + '</div><div><strong>' + (winner ? (winner === role ? "Match won" : "Match lost") : info.title) + '</strong><p>' + info.detail + '</p></div>' + battle;
       }
       function nextRound() {
         if (!state || !state.resolved || role === "spectator") return;
