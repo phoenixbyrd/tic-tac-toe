@@ -400,7 +400,7 @@
       var hostScore = el("hostScore"), guestScore = el("guestScore"), hostName = el("hostName"), guestName = el("guestName"), roundLabel = el("roundLabel");
       var copyBtn = el("copyBtn"), leaveBtn = el("leaveBtn"), toastEl = el("toast");
       var socket = null, room = "", topic = "", clientId = randomId(14), role = null;
-      var state = null, packetId = 1, buffer = new Uint8Array(0), mode = "", roomTimer = null, pingTimer = null;
+      var state = null, packetId = 1, buffer = new Uint8Array(0), mode = "", roomTimer = null, pingTimer = null, reconnectTimer = null, reconnectTries = 0, lastPacketAt = 0, wasHidden = false;
 
       function icon(move) {
         if (move === "r") return '<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M17 39V25c0-3 2-5 5-5s5 2 5 5v7-13c0-3 2-5 5-5s5 2 5 5v12-9c0-3 2-5 5-5s5 2 5 5v11-7c0-3 2-5 5-5s5 2 5 5v14c0 12-8 20-20 20S17 51 17 39Z"/><path d="M17 34c-5-3-9-1-9 3 0 3 3 8 9 13"/></svg>';
@@ -446,24 +446,47 @@
       function publishPacket(payload, retained) { return packet(3, concat([field(topic), utf8(payload)]), retained ? 1 : 0); }
       function send(bytes) { if (socket && socket.readyState === WebSocket.OPEN) socket.send(bytes); }
 
+      function connectSocket(isRetry) {
+        try {
+          socket = new WebSocket(BROKER, "mqtt");
+          socket.binaryType = "arraybuffer";
+          socket.onopen = function () { send(connectPacket()); reconnectTries = 0; };
+          socket.onmessage = function (e) { receive(new Uint8Array(e.data)); };
+          socket.onerror = function () { if (!isRetry) showError("Could’t reach the game relay. Check your connection and try again."); };
+          socket.onclose = onSocketClose;
+        } catch (e) { if (!isRetry) showError("This browser couldn’t open the game relay."); else onSocketClose(); }
+      }
+      function onSocketClose() {
+        clearInterval(pingTimer); pingTimer = null;
+        if (!room || banner.classList.contains("show")) return;
+        reconnectTries += 1;
+        if (reconnectTries <= 5) {
+          statusEl.textContent = "Reconnecting…";
+          substatus.textContent = "Picking up where you left off";
+          clearTimeout(reconnectTimer);
+          reconnectTimer = setTimeout(reconnectNow, Math.min(reconnectTries * 1500, 8000));
+        } else {
+          showError("The connection closed. Leave the match and try again.");
+        }
+      }
+      function reconnectNow() {
+        clearTimeout(reconnectTimer); reconnectTimer = null;
+        if (!room) return;
+        closeSocket();
+        statusEl.textContent = "Reconnecting…";
+        substatus.textContent = "Picking up where you left off";
+        connectSocket(true);
+      }
       function openRoom(kind, desired) {
         closeSocket();
+        reconnectTries = 0; lastPacketAt = Date.now(); wasHidden = false;
         mode = kind; room = desired || makeCode(); topic = PREFIX + room.replace("-", "");
         role = null; state = null; buffer = new Uint8Array(0);
         intro.classList.add("hidden"); lobbyArt.classList.add("hidden"); gameEl.classList.add("active"); page.classList.add("playing");
         roomCodeEl.textContent = room; banner.classList.remove("show");
         statusEl.textContent = "Connecting…"; substatus.textContent = "Opening the room"; renderChoices(); updateScore();
         createBtn.disabled = true; joinBtn.disabled = true;
-        try {
-          socket = new WebSocket(BROKER, "mqtt"); socket.binaryType = "arraybuffer";
-          socket.onopen = function () { send(connectPacket()); };
-          socket.onmessage = function (e) { receive(new Uint8Array(e.data)); };
-          socket.onerror = function () { showError("Couldn’t reach the game relay. Check your connection and try again."); };
-          socket.onclose = function () {
-            clearInterval(pingTimer); pingTimer = null;
-            if (room && !banner.classList.contains("show")) showError("The connection closed. Leave the match and try again.");
-          };
-        } catch (e) { showError("This browser couldn’t open the game relay."); }
+        connectSocket(false);
       }
       function receive(chunk) {
         buffer = concat([buffer, chunk]); var offset = 0;
@@ -477,6 +500,7 @@
         buffer = buffer.slice(offset);
       }
       function handlePacket(type, body) {
+        lastPacketAt = Date.now();
         if (type === 2) {
           if (body[1] !== 0) return showError("The relay refused the connection.");
           send(subscribePacket());
@@ -635,7 +659,7 @@
         publishState(); updateGame();
       }
       function closeSocket() {
-        clearTimeout(roomTimer); clearInterval(pingTimer); pingTimer = null;
+        clearTimeout(roomTimer); clearInterval(pingTimer); pingTimer = null; clearTimeout(reconnectTimer); reconnectTimer = null;
         if (socket) { socket.onclose = null; try { socket.close(); } catch (e) {} socket = null; }
       }
       function leave() {
@@ -668,6 +692,14 @@
       });
       nextBtn.addEventListener("click", nextRound);
       leaveBtn.addEventListener("click", leave);
+      document.addEventListener("visibilitychange", function () {
+        if (document.hidden) { wasHidden = true; return; }
+        if (!room || !wasHidden) return;
+        wasHidden = false;
+        var dead = !socket || socket.readyState !== WebSocket.OPEN;
+        var stale = Date.now() - lastPacketAt > 45000;
+        if (dead || stale) { reconnectTries = 0; reconnectNow(); }
+      });
       window.addEventListener("beforeunload", closeSocket);
       renderChoices(); updateScore();
     })();
