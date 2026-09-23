@@ -1,0 +1,481 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="theme-color" content="#f4b942" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#111318" media="(prefers-color-scheme: dark)" />
+  <link rel="icon" href="data:," />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <title>Tic-Tac-Toe</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f6f2e8;
+      --ink: #15171b;
+      --muted: #5e5b54;
+      --paper: #fffdf7;
+      --line: #15171b;
+      --yellow: #f4b942;
+      --yellow-ink: #2d2207;
+      --blue: #155eef;
+      --blue-soft: #dce8ff;
+      --red: #d83a42;
+      --red-soft: #ffe1e1;
+      --green: #177a4d;
+      --shadow: rgba(21, 23, 27, .16);
+      --soft-line: rgba(21, 23, 27, .16);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #111318;
+        --ink: #f5f1e8;
+        --muted: #aaa69e;
+        --paper: #1a1d23;
+        --line: #f5f1e8;
+        --yellow: #f3bf51;
+        --yellow-ink: #211803;
+        --blue: #6e9cff;
+        --blue-soft: #182b50;
+        --red: #ff7379;
+        --red-soft: #492326;
+        --green: #56cc91;
+        --shadow: rgba(0, 0, 0, .38);
+        --soft-line: rgba(245, 241, 232, .17);
+      }
+    }
+    * { box-sizing: border-box; }
+    html { min-height: 100%; background: var(--bg); }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      min-height: 100svh;
+      font-family: "Bricolage Grotesque", sans-serif;
+      color: var(--ink);
+      background:
+        linear-gradient(var(--soft-line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--soft-line) 1px, transparent 1px),
+        var(--bg);
+      background-size: 26px 26px;
+      -webkit-font-smoothing: antialiased;
+    }
+    button, input { font: inherit; }
+    button { -webkit-tap-highlight-color: transparent; }
+    .page {
+      width: min(100%, 1080px);
+      min-height: 100vh;
+      min-height: 100svh;
+      margin: 0 auto;
+      padding: clamp(28px, 5vw, 68px) clamp(18px, 5vw, 64px) max(32px, env(safe-area-inset-bottom));
+      display: grid;
+      grid-template-columns: minmax(260px, .84fr) minmax(340px, 1.16fr);
+      align-items: center;
+      gap: clamp(36px, 7vw, 96px);
+    }
+    .intro { align-self: center; }
+    h1 {
+      margin: 0;
+      max-width: 7ch;
+      font-size: clamp(3rem, 7vw, 5.8rem);
+      line-height: .92;
+      letter-spacing: -.065em;
+      font-weight: 700;
+    }
+    .intro > p {
+      max-width: 34rem;
+      margin: 24px 0 0;
+      color: var(--muted);
+      font-size: clamp(1rem, 1.8vw, 1.2rem);
+      line-height: 1.5;
+    }
+    .setup {
+      margin-top: 34px;
+      display: grid;
+      gap: 22px;
+      max-width: 390px;
+    }
+    .primary, .secondary, .ghost {
+      min-height: 52px;
+      border: 2px solid var(--line);
+      border-radius: 10px;
+      padding: 0 18px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
+    }
+    .primary {
+      color: var(--yellow-ink);
+      background: var(--yellow);
+      box-shadow: 4px 4px 0 var(--line);
+    }
+    .secondary { color: var(--ink); background: var(--paper); }
+    .ghost {
+      min-height: 42px;
+      color: var(--ink);
+      background: transparent;
+      border-color: var(--soft-line);
+      font-size: .92rem;
+    }
+    .primary:hover, .secondary:hover { transform: translate(-1px, -1px); }
+    .primary:active, .secondary:active { transform: translate(2px, 2px); box-shadow: none; }
+    button:focus-visible, input:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
+    button:disabled { cursor: not-allowed; opacity: .52; transform: none; box-shadow: none; }
+    .join-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; }
+    .code-input {
+      width: 100%; min-width: 0; height: 52px;
+      border: 2px solid var(--line); border-radius: 10px;
+      padding: 0 14px;
+      background: var(--paper); color: var(--ink);
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 1rem; font-weight: 600; letter-spacing: .07em;
+      text-transform: uppercase;
+    }
+    .code-input::placeholder { color: var(--muted); letter-spacing: .02em; text-transform: none; }
+    .note { margin: 0; color: var(--muted); font-size: .83rem; line-height: 1.45; }
+    .game-panel {
+      background: var(--paper);
+      border: 2px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 10px 10px 0 var(--line);
+      padding: clamp(20px, 4vw, 38px);
+      min-height: 566px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .lobby-art { display: grid; place-items: center; gap: 28px; text-align: center; }
+    .mini-board {
+      width: min(72%, 250px); aspect-ratio: 1;
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      transform: rotate(-2deg);
+    }
+    .mini-board span { display: grid; place-items: center; font-size: clamp(2.3rem, 7vw, 4.8rem); font-weight: 700; line-height: 1; }
+    .mini-board span:not(:nth-child(3n)) { border-right: 5px solid var(--line); }
+    .mini-board span:nth-child(-n+6) { border-bottom: 5px solid var(--line); }
+    .x { color: var(--blue); }
+    .o { color: var(--red); }
+    .lobby-art strong { font-size: 1.35rem; }
+    .lobby-art p { margin: 7px 0 0; color: var(--muted); }
+    .game { display: none; width: min(100%, 520px); margin: auto; }
+    .game.active { display: block; }
+    .lobby-art.hidden, .intro.hidden { display: none; }
+    .game-head { display: grid; grid-template-columns: 1fr auto; align-items: start; gap: 16px; margin-bottom: 24px; }
+    .status { margin: 0; font-size: clamp(1.35rem, 3vw, 1.8rem); line-height: 1.1; letter-spacing: -.025em; }
+    .substatus { margin: 7px 0 0; color: var(--muted); font-size: .95rem; }
+    .room {
+      border: 0; padding: 0; color: var(--ink); background: transparent; cursor: pointer;
+      text-align: right;
+    }
+    .room small { display: block; color: var(--muted); margin-bottom: 3px; }
+    .room-code { font-family: "IBM Plex Mono", monospace; font-weight: 600; letter-spacing: .08em; }
+    .board {
+      width: 100%; aspect-ratio: 1; display: grid; grid-template-columns: repeat(3, 1fr);
+      margin: 0 auto;
+    }
+    .cell {
+      appearance: none; border: 0; border-radius: 0; background: transparent;
+      color: var(--ink); cursor: pointer; display: grid; place-items: center;
+      font-weight: 700; font-size: clamp(3.25rem, 11vw, 6rem); line-height: 1;
+    }
+    .cell:not(:nth-child(3n)) { border-right: clamp(4px, .8vw, 7px) solid var(--line); }
+    .cell:nth-child(-n+6) { border-bottom: clamp(4px, .8vw, 7px) solid var(--line); }
+    .cell.x { color: var(--blue); }
+    .cell.o { color: var(--red); }
+    .cell.win { background: var(--yellow); }
+    .cell:disabled { opacity: 1; cursor: default; }
+    .cell:not(:disabled):hover { background: var(--blue-soft); }
+    .game-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 26px; }
+    .banner {
+      display: none; margin-bottom: 18px; padding: 12px 14px;
+      border-radius: 8px; background: var(--red-soft); color: var(--ink);
+      font-size: .9rem; line-height: 1.4;
+    }
+    .banner.show { display: block; }
+    .toast {
+      position: fixed; left: 50%; bottom: max(20px, env(safe-area-inset-bottom));
+      transform: translate(-50%, 18px); opacity: 0; pointer-events: none;
+      color: var(--paper); background: var(--ink); padding: 10px 16px; border-radius: 999px;
+      font-weight: 600; transition: .18s ease; z-index: 4;
+    }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    @media (max-width: 760px) {
+      .page { display: block; padding-top: 34px; }
+      h1 { max-width: 9ch; font-size: clamp(3rem, 15vw, 4.6rem); }
+      .intro > p { margin-top: 16px; }
+      .setup { margin-top: 24px; }
+      .game-panel { margin-top: 38px; min-height: auto; padding: 22px; box-shadow: 6px 6px 0 var(--line); }
+      .mini-board { width: min(62vw, 240px); }
+      .game-head { margin-bottom: 18px; }
+      .game-actions { margin-top: 22px; }
+      .page.playing { padding-top: 20px; }
+      .page.playing .game-panel { margin-top: 0; }
+    }
+    @media (max-width: 410px) {
+      .join-row { grid-template-columns: 1fr; }
+      .join-row .secondary { width: 100%; }
+      .game-panel { padding: 16px; }
+      .game-actions { grid-template-columns: 1fr; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page" id="page">
+    <section class="intro" id="intro" aria-labelledby="headline">
+      <h1 id="headline">Your move.</h1>
+      <p>Start a room, send the code, and play live from two phones or browsers.</p>
+      <div class="setup">
+        <button class="primary" id="createBtn" type="button">Create a new game</button>
+        <div class="join-row">
+          <label style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)" for="codeInput">Invite code</label>
+          <input class="code-input" id="codeInput" maxlength="9" autocomplete="off" spellcheck="false" inputmode="text" placeholder="Enter invite code" />
+          <button class="secondary" id="joinBtn" type="button">Join</button>
+        </div>
+        <p class="note">Games travel through a public message relay. Invite codes aren’t passwords, so don’t use the game to share private information.</p>
+      </div>
+    </section>
+
+    <section class="game-panel" aria-live="polite">
+      <div class="lobby-art" id="lobbyArt">
+        <div class="mini-board" aria-hidden="true">
+          <span class="x">×</span><span></span><span class="o">○</span>
+          <span></span><span class="x">×</span><span></span>
+          <span class="o">○</span><span></span><span class="x">×</span>
+        </div>
+        <div><strong>Two players. One code.</strong><p>No sign-up required.</p></div>
+      </div>
+
+      <div class="game" id="game">
+        <div class="banner" id="banner" role="alert"></div>
+        <div class="game-head">
+          <div>
+            <h2 class="status" id="status">Connecting…</h2>
+            <p class="substatus" id="substatus">Opening the room</p>
+          </div>
+          <button class="room" id="copyBtn" type="button" title="Copy invite code">
+            <small>Invite code</small>
+            <span class="room-code" id="roomCode">—</span>
+          </button>
+        </div>
+        <div class="board" id="board" role="grid" aria-label="Tic-tac-toe board"></div>
+        <div class="game-actions">
+          <button class="secondary" id="newRoundBtn" type="button" disabled>New round</button>
+          <button class="ghost" id="leaveBtn" type="button">Leave room</button>
+        </div>
+      </div>
+    </section>
+  </main>
+  <div class="toast" id="toast" role="status"></div>
+
+  <script>
+    (function () {
+      "use strict";
+      var BROKER = "wss://broker.emqx.io:8084/mqtt";
+      var PREFIX = "muse-ttt-v1/";
+      var el = function (id) { return document.getElementById(id); };
+      var createBtn = el("createBtn"), joinBtn = el("joinBtn"), codeInput = el("codeInput");
+      var intro = el("intro"), lobbyArt = el("lobbyArt"), gameEl = el("game"), page = el("page");
+      var statusEl = el("status"), substatus = el("substatus"), roomCodeEl = el("roomCode");
+      var boardEl = el("board"), banner = el("banner"), newRoundBtn = el("newRoundBtn");
+      var copyBtn = el("copyBtn"), leaveBtn = el("leaveBtn"), toastEl = el("toast");
+      var socket = null, room = "", topic = "", clientId = randomId(14), role = null;
+      var state = null, packetId = 1, buffer = new Uint8Array(0), mode = "", joinTimer = null, pingTimer = null;
+
+      function randomId(n) {
+        var chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789", bytes = new Uint8Array(n);
+        crypto.getRandomValues(bytes);
+        return Array.from(bytes, function (b) { return chars[b % chars.length]; }).join("");
+      }
+      function makeCode() { var s = randomId(8); return s.slice(0, 4) + "-" + s.slice(4); }
+      function cleanCode(v) {
+        var s = v.toUpperCase().replace(/[^A-Z2-9]/g, "").slice(0, 8);
+        return s.length > 4 ? s.slice(0, 4) + "-" + s.slice(4) : s;
+      }
+      function utf8(s) { return new TextEncoder().encode(s); }
+      function str(bytes) { return new TextDecoder().decode(bytes); }
+      function remainingLength(n) {
+        var out = [];
+        do { var d = n % 128; n = Math.floor(n / 128); if (n > 0) d |= 128; out.push(d); } while (n > 0);
+        return out;
+      }
+      function packet(type, body, flags) {
+        var head = [((type << 4) | (flags || 0))].concat(remainingLength(body.length));
+        var out = new Uint8Array(head.length + body.length); out.set(head); out.set(body, head.length); return out;
+      }
+      function field(s) {
+        var b = utf8(s), out = new Uint8Array(b.length + 2); out[0] = b.length >> 8; out[1] = b.length & 255; out.set(b, 2); return out;
+      }
+      function concat(parts) {
+        var len = parts.reduce(function (n, p) { return n + p.length; }, 0), out = new Uint8Array(len), at = 0;
+        parts.forEach(function (p) { out.set(p, at); at += p.length; }); return out;
+      }
+      function connectPacket() {
+        var variable = concat([field("MQTT"), new Uint8Array([4, 2, 0, 30])]);
+        return packet(1, concat([variable, field("ttt_" + clientId)]));
+      }
+      function subscribePacket() {
+        var id = packetId++ % 65535 || 1;
+        return packet(8, concat([new Uint8Array([id >> 8, id & 255]), field(topic), new Uint8Array([0])]), 2);
+      }
+      function publishPacket(payload, retained) {
+        return packet(3, concat([field(topic), utf8(payload)]), retained ? 1 : 0);
+      }
+      function send(bytes) { if (socket && socket.readyState === WebSocket.OPEN) socket.send(bytes); }
+
+      function openRoom(kind, desired) {
+        closeSocket();
+        mode = kind; room = desired || makeCode(); topic = PREFIX + room.replace("-", "");
+        role = null; state = null; buffer = new Uint8Array(0);
+        intro.classList.add("hidden"); lobbyArt.classList.add("hidden"); gameEl.classList.add("active"); page.classList.add("playing");
+        roomCodeEl.textContent = room; banner.classList.remove("show");
+        statusEl.textContent = "Connecting…"; substatus.textContent = "Opening the room"; renderBoard();
+        createBtn.disabled = true; joinBtn.disabled = true;
+        try {
+          socket = new WebSocket(BROKER, "mqtt");
+          socket.binaryType = "arraybuffer";
+          socket.onopen = function () { send(connectPacket()); };
+          socket.onmessage = function (e) { receive(new Uint8Array(e.data)); };
+          socket.onerror = function () { showError("Couldn’t reach the game relay. Check your connection and try again."); };
+          socket.onclose = function () {
+            clearInterval(pingTimer); pingTimer = null;
+            if (room && !banner.classList.contains("show")) showError("The connection closed. Leave the room and try again.");
+          };
+        } catch (e) { showError("This browser couldn’t open the game relay."); }
+      }
+      function receive(chunk) {
+        buffer = concat([buffer, chunk]); var offset = 0;
+        while (offset < buffer.length) {
+          if (offset + 2 > buffer.length) break;
+          var first = buffer[offset], multiplier = 1, len = 0, pos = offset + 1, digit;
+          do { if (pos >= buffer.length) return; digit = buffer[pos++]; len += (digit & 127) * multiplier; multiplier *= 128; } while (digit & 128);
+          if (pos + len > buffer.length) break;
+          handlePacket(first >> 4, buffer.slice(pos, pos + len)); offset = pos + len;
+        }
+        buffer = buffer.slice(offset);
+      }
+      function handlePacket(type, body) {
+        if (type === 2) {
+          if (body[1] !== 0) return showError("The relay refused the connection.");
+          send(subscribePacket());
+          clearInterval(pingTimer); pingTimer = setInterval(function () { send(packet(12, new Uint8Array(0))); }, 20000);
+        } else if (type === 9) {
+          statusEl.textContent = mode === "create" ? "Creating room…" : "Finding room…";
+          substatus.textContent = mode === "create" ? "Checking that your code is free" : "Looking for " + room;
+          clearTimeout(joinTimer);
+          joinTimer = setTimeout(function () {
+            if (mode === "create" && !state) createState();
+            else if (mode === "join" && !state) showError("No active game was found for that code.");
+          }, mode === "create" ? 700 : 3500);
+        } else if (type === 3) {
+          if (body.length < 2) return;
+          var n = (body[0] << 8) + body[1], payload = str(body.slice(2 + n));
+          try { acceptState(JSON.parse(payload)); } catch (e) {}
+        }
+      }
+      function createState() {
+        role = "X";
+        state = { v: 1, room: room, rev: 1, x: clientId, o: null, board: ["","","","","","","","",""], turn: "X", winner: null, round: 1, updated: Date.now() };
+        publishState(); updateGame();
+      }
+      function acceptState(next) {
+        if (!next || next.v !== 1 || next.room !== room || !Array.isArray(next.board) || next.board.length !== 9) return;
+        if (mode === "create" && !state && next.x && next.x !== clientId) {
+          clearTimeout(joinTimer); room = makeCode(); topic = PREFIX + room.replace("-", ""); roomCodeEl.textContent = room;
+          send(subscribePacket());
+          joinTimer = setTimeout(createState, 700); return;
+        }
+        if (state && Number(next.rev) < Number(state.rev)) return;
+        clearTimeout(joinTimer); state = next;
+        if (next.x === clientId) role = "X";
+        else if (next.o === clientId) role = "O";
+        else if (mode === "join" && !next.o) {
+          role = "O"; state.o = clientId; state.rev += 1; state.updated = Date.now(); publishState();
+        } else if (mode === "join" && next.o !== clientId) {
+          role = "spectator"; showError("This room already has two players.");
+        }
+        updateGame();
+      }
+      function publishState() { if (state) send(publishPacket(JSON.stringify(state), true)); }
+      function winnerOf(b) {
+        var lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+        for (var i = 0; i < lines.length; i++) { var a = lines[i]; if (b[a[0]] && b[a[0]] === b[a[1]] && b[a[1]] === b[a[2]]) return { mark:b[a[0]], line:a }; }
+        if (b.every(Boolean)) return { mark:"draw", line:[] }; return null;
+      }
+      function play(index) {
+        if (!state || !role || role === "spectator" || state.winner || state.turn !== role || state.board[index]) return;
+        state.board[index] = role; var result = winnerOf(state.board);
+        state.winner = result ? result.mark : null; state.winLine = result ? result.line : [];
+        if (!result) state.turn = role === "X" ? "O" : "X";
+        state.rev += 1; state.updated = Date.now(); publishState(); updateGame();
+      }
+      function updateGame() {
+        if (!state) return renderBoard();
+        var hasOpponent = !!state.o;
+        newRoundBtn.disabled = !hasOpponent;
+        if (state.winner === "draw") { statusEl.textContent = "It’s a draw."; substatus.textContent = "A perfectly stubborn round"; }
+        else if (state.winner) { statusEl.textContent = state.winner === role ? "You win!" : "Your friend wins."; substatus.textContent = "Round " + state.round + " · You’re " + role; }
+        else if (!hasOpponent) { statusEl.textContent = "Waiting for a friend"; substatus.textContent = "Copy the invite code and send it to them"; }
+        else if (role === "spectator") { statusEl.textContent = "Room is full"; substatus.textContent = "This game already has two players"; }
+        else if (state.turn === role) { statusEl.textContent = "Your move"; substatus.textContent = "Round " + state.round + " · You’re " + role; }
+        else { statusEl.textContent = "Their move"; substatus.textContent = "Round " + state.round + " · You’re " + role; }
+        renderBoard();
+      }
+      function renderBoard() {
+        boardEl.innerHTML = ""; var b = state ? state.board : ["","","","","","","","",""];
+        for (var i = 0; i < 9; i++) {
+          (function (index) {
+            var btn = document.createElement("button"), mark = b[index];
+            btn.type = "button"; btn.className = "cell" + (mark ? " " + mark.toLowerCase() : "");
+            if (state && state.winLine && state.winLine.indexOf(index) >= 0) btn.className += " win";
+            btn.textContent = mark === "X" ? "×" : mark === "O" ? "○" : "";
+            btn.setAttribute("role", "gridcell"); btn.setAttribute("aria-label", mark ? ("Cell " + (index + 1) + ", " + mark) : ("Empty cell " + (index + 1)));
+            btn.disabled = !state || !!mark || !!state.winner || state.turn !== role || !state.o;
+            btn.addEventListener("click", function () { play(index); }); boardEl.appendChild(btn);
+          })(i);
+        }
+      }
+      function newRound() {
+        if (!state || !state.o) return;
+        state.board = ["","","","","","","","",""]; state.winner = null; state.winLine = [];
+        state.round += 1; state.turn = state.round % 2 ? "X" : "O"; state.rev += 1; state.updated = Date.now();
+        publishState(); updateGame();
+      }
+      function closeSocket() {
+        clearTimeout(joinTimer); clearInterval(pingTimer); pingTimer = null;
+        if (socket) { socket.onclose = null; try { socket.close(); } catch (e) {} socket = null; }
+      }
+      function leave() {
+        closeSocket(); room = ""; topic = ""; state = null; role = null; mode = "";
+        intro.classList.remove("hidden"); lobbyArt.classList.remove("hidden"); gameEl.classList.remove("active"); page.classList.remove("playing");
+        banner.classList.remove("show"); createBtn.disabled = false; joinBtn.disabled = false; codeInput.value = "";
+      }
+      function showError(message) { banner.textContent = message; banner.classList.add("show"); statusEl.textContent = "Couldn’t connect"; substatus.textContent = "Your board is still here"; }
+      var toastTimer;
+      function toast(message) { toastEl.textContent = message; toastEl.classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(function () { toastEl.classList.remove("show"); }, 1800); }
+
+      codeInput.addEventListener("input", function () { codeInput.value = cleanCode(codeInput.value); });
+      codeInput.addEventListener("keydown", function (e) { if (e.key === "Enter") joinBtn.click(); });
+      createBtn.addEventListener("click", function () { openRoom("create"); });
+      joinBtn.addEventListener("click", function () {
+        var code = cleanCode(codeInput.value);
+        if (code.replace("-", "").length !== 8) { codeInput.focus(); toast("Enter all 8 characters"); return; }
+        openRoom("join", code);
+      });
+      copyBtn.addEventListener("click", function () {
+        if (!room) return;
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(room).then(function () { toast("Invite code copied"); }, function () { toast("Code: " + room); });
+        else toast("Code: " + room);
+      });
+      newRoundBtn.addEventListener("click", newRound);
+      leaveBtn.addEventListener("click", leave);
+      window.addEventListener("beforeunload", closeSocket);
+      renderBoard();
+    })();
+  </script>
+</body>
+</html>
