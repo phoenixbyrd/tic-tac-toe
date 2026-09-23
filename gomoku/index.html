@@ -171,6 +171,8 @@
     .status { margin: 0; font-family: "Newsreader", serif; font-size: clamp(1.55rem, 3vw, 2.15rem); line-height: 1.05; letter-spacing: -.025em; }
     .substatus { margin: 5px 0 0; color: var(--muted); font-size: .88rem; line-height: 1.4; }
     .room { border: 0; padding: 2px 0; color: var(--ink); background: transparent; cursor: pointer; text-align: right; }
+    .room-actions { display: flex; align-items: center; gap: 10px; }
+    .share-btn { min-height: 44px; padding: 0 14px; font-size: .9rem; }
     .room small { display: block; margin-bottom: 2px; color: var(--muted); }
     .room-code { font-weight: 700; letter-spacing: .07em; }
     .player-key { display: flex; align-items: center; gap: 8px; min-height: 24px; margin-bottom: 9px; color: var(--muted); font-size: .82rem; }
@@ -299,10 +301,13 @@
             <h2 class="status" id="status">Connecting…</h2>
             <p class="substatus" id="substatus">Opening the room</p>
           </div>
-          <button class="room" id="copyBtn" type="button" title="Copy invite code">
-            <small>Invite code</small>
-            <span class="room-code" id="roomCode">—</span>
-          </button>
+          <div class="room-actions">
+            <button class="secondary share-btn" id="shareBtn" type="button">Share</button>
+            <button class="room" id="copyBtn" type="button" title="Copy invite code">
+              <small>Invite code</small>
+              <span class="room-code" id="roomCode">—</span>
+            </button>
+          </div>
         </div>
         <div class="player-key" id="playerKey" aria-live="polite"></div>
         <div class="board-shell">
@@ -329,7 +334,7 @@
       var intro = el("intro"), lobbyArt = el("lobbyArt"), gameEl = el("game"), page = el("page");
       var statusEl = el("status"), substatus = el("substatus"), roomCodeEl = el("roomCode"), playerKey = el("playerKey");
       var boardEl = el("board"), banner = el("banner"), newRoundBtn = el("newRoundBtn");
-      var copyBtn = el("copyBtn"), leaveBtn = el("leaveBtn"), toastEl = el("toast");
+      var copyBtn = el("copyBtn"), shareBtn = el("shareBtn"), leaveBtn = el("leaveBtn"), toastEl = el("toast");
       var socket = null, room = "", topic = "", clientId = randomId(14), role = null;
       var state = null, packetId = 1, buffer = new Uint8Array(0), mode = "", roomTimer = null, pingTimer = null, reconnectTimer = null, reconnectTries = 0, lastPacketAt = 0, wasHidden = false;
 
@@ -579,6 +584,16 @@
         } else toast("Code: " + room);
       });
       newRoundBtn.addEventListener("click", newRound);
+      shareBtn.addEventListener("click", function () {
+        if (!room) return;
+        var link = location.href.split("#")[0] + "#join=" + room.replace("-", "");
+        var inviteText = "Join my Gomoku game! Your invite code is " + room;
+        if (navigator.share) {
+          navigator.share({ title: "Join my Gomoku game", text: inviteText, url: link }).catch(function () {});
+        } else if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(inviteText + " " + link).then(function () { toast("Invite link copied"); }, function () { toast("Code: " + room); });
+        } else { toast("Code: " + room); }
+      });
       leaveBtn.addEventListener("click", leave);
       document.addEventListener("visibilitychange", function () {
         if (document.hidden) { wasHidden = true; return; }
@@ -589,6 +604,10 @@
         if (dead || stale) { reconnectTries = 0; reconnectNow(); }
       });
       window.addEventListener("beforeunload", closeSocket);
+      (function () {
+        var m = location.hash.match(/#join=([A-Za-z2-9]{4}-?[A-Za-z2-9]{4})/);
+        if (m) { codeInput.value = cleanCode(m[1]); toast("Invite code filled in \u2014 tap Join"); }
+      })();
       renderBoard();
     })();
   </script>

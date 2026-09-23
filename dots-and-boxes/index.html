@@ -158,6 +158,8 @@
     .status { margin: 0; font-size: clamp(1.38rem, 3vw, 1.9rem); line-height: 1.08; letter-spacing: -.035em; }
     .substatus { margin: 6px 0 0; color: var(--muted); font-size: .9rem; line-height: 1.35; }
     .room { border: 0; padding: 2px 0; color: var(--ink); background: transparent; cursor: pointer; text-align: right; }
+    .room-actions { display: flex; align-items: center; gap: 10px; }
+    .share-btn { min-height: 44px; padding: 0 14px; font-size: .9rem; }
     .room small { display: block; margin-bottom: 3px; color: var(--muted); }
     .room-code { font-family: "IBM Plex Mono", monospace; font-weight: 600; letter-spacing: .07em; }
     .scoreboard {
@@ -253,10 +255,13 @@
             <h2 class="status" id="status">Connecting…</h2>
             <p class="substatus" id="substatus">Opening the room</p>
           </div>
-          <button class="room" id="copyBtn" type="button" title="Copy invite code">
-            <small>Invite code</small>
-            <span class="room-code" id="roomCode">—</span>
-          </button>
+          <div class="room-actions">
+            <button class="secondary share-btn" id="shareBtn" type="button">Share</button>
+            <button class="room" id="copyBtn" type="button" title="Copy invite code">
+              <small>Invite code</small>
+              <span class="room-code" id="roomCode">—</span>
+            </button>
+          </div>
         </div>
         <div class="scoreboard" aria-label="Score">
           <div class="score"><span class="swatch"></span><span>You <strong id="yourScore">0</strong></span></div>
@@ -286,7 +291,7 @@
       var intro = el("intro"), lobbyArt = el("lobbyArt"), gameEl = el("game"), page = el("page");
       var statusEl = el("status"), substatus = el("substatus"), roomCodeEl = el("roomCode");
       var boardEl = el("board"), banner = el("banner"), newRoundBtn = el("newRoundBtn");
-      var copyBtn = el("copyBtn"), leaveBtn = el("leaveBtn"), toastEl = el("toast");
+      var copyBtn = el("copyBtn"), shareBtn = el("shareBtn"), leaveBtn = el("leaveBtn"), toastEl = el("toast");
       var yourScore = el("yourScore"), theirScore = el("theirScore"), theirName = el("theirName"), roundLabel = el("roundLabel");
       var socket = null, room = "", topic = "", clientId = randomId(14), role = null;
       var state = null, packetId = 1, buffer = new Uint8Array(0), mode = "", roomTimer = null, pingTimer = null, reconnectTimer = null, reconnectTries = 0, lastPacketAt = 0, wasHidden = false;
@@ -549,6 +554,16 @@
         else toast("Code: " + room);
       });
       newRoundBtn.addEventListener("click", newRound);
+      shareBtn.addEventListener("click", function () {
+        if (!room) return;
+        var link = location.href.split("#")[0] + "#join=" + room.replace("-", "");
+        var inviteText = "Join my Dots and Boxes game! Your invite code is " + room;
+        if (navigator.share) {
+          navigator.share({ title: "Join my Dots and Boxes game", text: inviteText, url: link }).catch(function () {});
+        } else if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(inviteText + " " + link).then(function () { toast("Invite link copied"); }, function () { toast("Code: " + room); });
+        } else { toast("Code: " + room); }
+      });
       leaveBtn.addEventListener("click", leave);
       document.addEventListener("visibilitychange", function () {
         if (document.hidden) { wasHidden = true; return; }
@@ -559,6 +574,10 @@
         if (dead || stale) { reconnectTries = 0; reconnectNow(); }
       });
       window.addEventListener("beforeunload", closeSocket);
+      (function () {
+        var m = location.hash.match(/#join=([A-Za-z2-9]{4}-?[A-Za-z2-9]{4})/);
+        if (m) { codeInput.value = cleanCode(m[1]); toast("Invite code filled in \u2014 tap Join"); }
+      })();
       buildMiniBoard(); renderBoard();
     })();
   </script>
