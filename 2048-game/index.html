@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="theme-color" content="#f4efe4" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#181a18" media="(prefers-color-scheme: dark)" />
+  <link rel="icon" href="data:," />
+  <title>2048 Game</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f4efe4;
+      --ink: #2c332f;
+      --muted: #68706b;
+      --panel: #fffaf0;
+      --board: #858f87;
+      --empty: #b9c1ba;
+      --line: rgba(44,51,47,.12);
+      --button: #2d6a58;
+      --button-ink: #ffffff;
+      --secondary: rgba(255,255,255,.62);
+      --shadow: 0 18px 45px rgba(50,59,52,.16);
+      --focus: #1477d4;
+      --tile-dark: #26342e;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #181a18;
+        --ink: #f3f0e8;
+        --muted: #aab2ab;
+        --panel: #222622;
+        --board: #3f4842;
+        --empty: #555f58;
+        --line: rgba(255,255,255,.1);
+        --button: #69b59a;
+        --button-ink: #10221c;
+        --secondary: rgba(255,255,255,.07);
+        --shadow: 0 18px 45px rgba(0,0,0,.28);
+        --focus: #79bfff;
+        --tile-dark: #eef5ef;
+      }
+    }
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Avenir Next", Avenir, "Segoe UI", sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      overscroll-behavior: none;
+    }
+    button { font: inherit; }
+    .page {
+      width: min(100% - 32px, 940px);
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: max(28px, env(safe-area-inset-top)) 0 max(28px, env(safe-area-inset-bottom));
+      display: grid;
+      grid-template-columns: minmax(230px, .72fr) minmax(320px, 520px);
+      gap: clamp(28px, 6vw, 72px);
+      align-items: center;
+    }
+    .intro { align-self: center; }
+    h1 {
+      margin: 0 0 14px;
+      max-width: 9ch;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(42px, 6vw, 76px);
+      font-weight: 600;
+      line-height: .98;
+      letter-spacing: -.04em;
+    }
+    .intro > p {
+      margin: 0;
+      max-width: 30ch;
+      color: var(--muted);
+      font-size: clamp(16px, 2vw, 19px);
+      line-height: 1.55;
+    }
+    .legend {
+      margin-top: 30px;
+      padding-top: 22px;
+      border-top: 1px solid var(--line);
+      display: grid;
+      gap: 12px;
+    }
+    .legend-row { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 14px; }
+    .keys { display: inline-grid; grid-template-columns: repeat(3, 27px); grid-template-rows: repeat(2, 27px); gap: 3px; flex: 0 0 auto; }
+    kbd { display:grid; place-items:center; border:1px solid var(--line); border-bottom-width:3px; border-radius:6px; background:var(--panel); color:var(--ink); font:700 12px/1 monospace; }
+    kbd:first-child { grid-column:2; }
+    kbd:nth-child(2) { grid-column:1; }
+    .swipe-icon { width: 30px; height: 30px; flex: 0 0 30px; color: var(--ink); }
+    .game { width: 100%; }
+    .score-row { display: flex; align-items: stretch; gap: 10px; margin-bottom: 12px; }
+    .score-box {
+      min-width: 84px;
+      padding: 8px 13px 9px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 10px;
+      text-align: center;
+      box-shadow: 0 5px 16px rgba(38,51,45,.05);
+    }
+    .score-label { display:block; color:var(--muted); font-size:11px; line-height:1.2; text-transform:uppercase; letter-spacing:.12em; font-weight:800; }
+    .score-value { display:block; margin-top:2px; font-size:21px; line-height:1.2; font-weight:800; font-variant-numeric:tabular-nums; }
+    .actions { margin-left: auto; display: flex; gap: 8px; }
+    .icon-button, .new-button {
+      min-height: 48px;
+      border: 0;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: transform .15s ease, background .15s ease, opacity .15s ease;
+    }
+    .icon-button { width: 48px; display:grid; place-items:center; background:var(--secondary); color:var(--ink); border:1px solid var(--line); }
+    .icon-button svg { width:20px; height:20px; }
+    .icon-button:disabled { opacity:.35; cursor:default; }
+    .new-button { padding: 0 18px; background:var(--button); color:var(--button-ink); font-weight:800; }
+    button:not(:disabled):active { transform: translateY(1px); }
+    button:focus-visible { outline:3px solid var(--focus); outline-offset:3px; }
+    .board-wrap { position: relative; width:100%; aspect-ratio:1; touch-action:none; user-select:none; -webkit-user-select:none; }
+    .board {
+      position:absolute; inset:0;
+      display:grid;
+      grid-template-columns:repeat(4, 1fr);
+      gap:clamp(7px, 1.8vw, 12px);
+      padding:clamp(7px, 1.8vw, 12px);
+      border-radius:16px;
+      background:var(--board);
+      box-shadow:var(--shadow);
+    }
+    .cell { border-radius:9px; background:var(--empty); opacity:.72; }
+    .tile-layer { position:absolute; inset:clamp(7px, 1.8vw, 12px); pointer-events:none; }
+    .tile {
+      position:absolute;
+      width:calc((100% - (3 * clamp(7px, 1.8vw, 12px))) / 4);
+      height:calc((100% - (3 * clamp(7px, 1.8vw, 12px))) / 4);
+      left:calc(var(--x) * (100% + clamp(7px, 1.8vw, 12px)) / 4);
+      top:calc(var(--y) * (100% + clamp(7px, 1.8vw, 12px)) / 4);
+      border-radius:9px;
+      display:grid;
+      place-items:center;
+      color:var(--tc, #324038);
+      background:var(--tile, #e9e4d7);
+      font-weight:900;
+      font-size:clamp(25px, 6.2vw, 49px);
+      line-height:1;
+      letter-spacing:-.05em;
+      box-shadow:inset 0 -4px 0 rgba(0,0,0,.08), 0 2px 5px rgba(0,0,0,.08);
+      animation:appear .16s ease-out;
+    }
+    .tile[data-digits="3"] { font-size:clamp(22px, 5.5vw, 43px); }
+    .tile[data-digits="4"] { font-size:clamp(18px, 4.6vw, 36px); }
+    .tile[data-digits="5"] { font-size:clamp(15px, 3.7vw, 30px); }
+    @keyframes appear { from { transform:scale(.72); opacity:.45; } to { transform:scale(1); opacity:1; } }
+    .tile[data-value="2"] { --tile:#eee9dc; }
+    .tile[data-value="4"] { --tile:#e8ddbe; }
+    .tile[data-value="8"] { --tile:#edb06e; --tc:#fffaf2; }
+    .tile[data-value="16"] { --tile:#e99055; --tc:#fffaf2; }
+    .tile[data-value="32"] { --tile:#dd694e; --tc:#fffaf2; }
+    .tile[data-value="64"] { --tile:#c84538; --tc:#fffaf2; }
+    .tile[data-value="128"] { --tile:#e0b63f; --tc:#fffdf4; }
+    .tile[data-value="256"] { --tile:#d2a72f; --tc:#fffdf4; }
+    .tile[data-value="512"] { --tile:#c49221; --tc:#fffdf4; }
+    .tile[data-value="1024"] { --tile:#247e69; --tc:#f5fff9; }
+    .tile[data-value="2048"] { --tile:#175e50; --tc:#f5fff9; box-shadow:inset 0 -4px 0 rgba(0,0,0,.12),0 0 0 3px rgba(255,255,255,.38),0 5px 18px rgba(17,92,74,.35); }
+    .tile.super { --tile:#29322e; --tc:#fff; }
+    .status { min-height:25px; margin:13px 2px 0; color:var(--muted); font-size:14px; line-height:1.5; }
+    .status strong { color:var(--ink); }
+    .overlay {
+      position:absolute; inset:0; z-index:4;
+      display:none; place-items:center; padding:24px;
+      border-radius:16px;
+      background:rgba(35,43,38,.78);
+      backdrop-filter:blur(5px);
+      -webkit-backdrop-filter:blur(5px);
+    }
+    .overlay.show { display:grid; }
+    .dialog { width:min(100%, 330px); padding:25px; border-radius:14px; background:var(--panel); color:var(--ink); text-align:center; box-shadow:0 18px 50px rgba(0,0,0,.3); }
+    .dialog h2 { margin:0 0 8px; font-family:Georgia,serif; font-size:32px; letter-spacing:-.02em; }
+    .dialog p { margin:0 0 20px; color:var(--muted); line-height:1.45; }
+    .dialog-actions { display:flex; justify-content:center; gap:8px; }
+    .dialog-actions button { min-height:45px; padding:0 16px; border:0; border-radius:9px; font-weight:800; cursor:pointer; }
+    .dialog-actions .primary { background:var(--button); color:var(--button-ink); }
+    .dialog-actions .secondary { background:var(--secondary); color:var(--ink); border:1px solid var(--line); }
+    .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+    @media (max-width: 760px) {
+      .page { width:min(100% - 24px, 540px); min-height:auto; padding-top:max(18px, env(safe-area-inset-top)); grid-template-columns:1fr; gap:18px; align-items:start; }
+      .intro { display:flex; align-items:end; justify-content:space-between; gap:16px; }
+      h1 { max-width:10ch; margin:0; font-size:clamp(35px, 10.5vw, 52px); }
+      .intro > p { display:none; }
+      .legend { display:none; }
+      .score-row { margin-bottom:10px; }
+      .score-box { min-width:70px; padding-inline:9px; }
+      .new-button { padding-inline:14px; }
+      .status { margin-top:10px; }
+    }
+    @media (max-width: 380px) {
+      .page { width:min(100% - 18px, 520px); }
+      .score-box { min-width:62px; }
+      .score-label { font-size:9px; }
+      .score-value { font-size:18px; }
+      .icon-button { width:44px; min-height:44px; }
+      .new-button { min-height:44px; padding-inline:11px; font-size:14px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration:.01ms !important; transition-duration:.01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="intro" aria-labelledby="heading">
+      <div>
+        <h1 id="heading">Join the numbers.</h1>
+        <p>Slide every tile at once. Matching numbers merge — build your way to 2048 without filling the board.</p>
+      </div>
+      <div class="legend" aria-label="How to play">
+        <div class="legend-row">
+          <span class="keys" aria-hidden="true"><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd></span>
+          <span>Use the arrow keys</span>
+        </div>
+        <div class="legend-row">
+          <svg class="swipe-icon" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M6 16h20M21 11l5 5-5 5M11 6l5-4 5 4M11 26l5 4 5-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Or swipe on the board</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="game" aria-label="2048 game">
+      <div class="score-row">
+        <div class="score-box"><span class="score-label">Score</span><span class="score-value" id="score">0</span></div>
+        <div class="score-box"><span class="score-label">Best</span><span class="score-value" id="best">0</span></div>
+        <div class="actions">
+          <button class="icon-button" id="undo" type="button" aria-label="Undo last move" title="Undo last move" disabled>
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 7 4.5 11 9 15M5 11h8.5a5.5 5.5 0 1 1 0 11H11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button class="new-button" id="newGame" type="button">New game</button>
+        </div>
+      </div>
+      <div class="board-wrap" id="boardWrap" tabindex="0" role="application" aria-label="2048 board. Use arrow keys or swipe to move tiles.">
+        <div class="board" aria-hidden="true">
+          <span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span>
+          <span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span>
+          <span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span>
+          <span class="cell"></span><span class="cell"></span><span class="cell"></span><span class="cell"></span>
+        </div>
+        <div class="tile-layer" id="tileLayer" aria-hidden="true"></div>
+        <div class="overlay" id="overlay" aria-live="polite">
+          <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
+            <h2 id="resultTitle">Game over</h2>
+            <p id="resultText">No more moves. Ready for another round?</p>
+            <div class="dialog-actions">
+              <button type="button" class="secondary" id="continueBtn">Keep going</button>
+              <button type="button" class="primary" id="restartBtn">Play again</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="status" id="status" aria-live="polite">Swipe or use arrow keys to begin.</p>
+      <div class="sr-only" id="boardState" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      'use strict';
+      var grid = [];
+      var score = 0;
+      var best = 0;
+      var previous = null;
+      var hasWon = false;
+      var keepPlaying = false;
+      var touchStart = null;
+
+      var tileLayer = document.getElementById('tileLayer');
+      var scoreEl = document.getElementById('score');
+      var bestEl = document.getElementById('best');
+      var undoBtn = document.getElementById('undo');
+      var newBtn = document.getElementById('newGame');
+      var boardWrap = document.getElementById('boardWrap');
+      var overlay = document.getElementById('overlay');
+      var resultTitle = document.getElementById('resultTitle');
+      var resultText = document.getElementById('resultText');
+      var continueBtn = document.getElementById('continueBtn');
+      var restartBtn = document.getElementById('restartBtn');
+      var statusEl = document.getElementById('status');
+      var boardState = document.getElementById('boardState');
+
+      function emptyGrid() {
+        return [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]];
+      }
+
+      function cloneGrid(source) {
+        return source.map(function (row) { return row.slice(); });
+      }
+
+      function emptyCells() {
+        var cells = [];
+        for (var y = 0; y < 4; y++) for (var x = 0; x < 4; x++) if (!grid[y][x]) cells.push([x,y]);
+        return cells;
+      }
+
+      function addRandomTile() {
+        var cells = emptyCells();
+        if (!cells.length) return;
+        var spot = cells[Math.floor(Math.random() * cells.length)];
+        grid[spot[1]][spot[0]] = Math.random() < .9 ? 2 : 4;
+      }
+
+      function formatNumber(n) { return n.toLocaleString(); }
+
+      function render(message) {
+        tileLayer.innerHTML = '';
+        var spokenRows = [];
+        for (var y = 0; y < 4; y++) {
+          var spoken = [];
+          for (var x = 0; x < 4; x++) {
+            var value = grid[y][x];
+            spoken.push(value || 'empty');
+            if (!value) continue;
+            var tile = document.createElement('div');
+            tile.className = 'tile' + (value > 2048 ? ' super' : '');
+            tile.dataset.value = String(value);
+            tile.dataset.digits = String(value).length;
+            tile.style.setProperty('--x', x);
+            tile.style.setProperty('--y', y);
+            tile.textContent = value;
+            tileLayer.appendChild(tile);
+          }
+          spokenRows.push(spoken.join(', '));
+        }
+        scoreEl.textContent = formatNumber(score);
+        if (score > best) best = score;
+        bestEl.textContent = formatNumber(best);
+        undoBtn.disabled = !previous;
+        statusEl.innerHTML = message || 'Combine matching tiles to reach <strong>2048</strong>.';
+        boardState.textContent = 'Board rows: ' + spokenRows.join('. ') + '. Score ' + score + '.';
+      }
+
+      function startGame() {
+        grid = emptyGrid();
+        score = 0;
+        previous = null;
+        hasWon = false;
+        keepPlaying = false;
+        overlay.classList.remove('show');
+        addRandomTile();
+        addRandomTile();
+        render('Swipe or use arrow keys to begin.');
+        boardWrap.focus({preventScroll:true});
+      }
+
+      function slideLine(line) {
+        var values = line.filter(function (n) { return n !== 0; });
+        var result = [];
+        var gained = 0;
+        for (var i = 0; i < values.length; i++) {
+          if (values[i] === values[i + 1]) {
+            var merged = values[i] * 2;
+            result.push(merged);
+            gained += merged;
+            i++;
+          } else result.push(values[i]);
+        }
+        while (result.length < 4) result.push(0);
+        return { line: result, gained: gained };
+      }
+
+      function gridsEqual(a, b) {
+        for (var y = 0; y < 4; y++) for (var x = 0; x < 4; x++) if (a[y][x] !== b[y][x]) return false;
+        return true;
+      }
+
+      function canMove() {
+        if (emptyCells().length) return true;
+        for (var y = 0; y < 4; y++) for (var x = 0; x < 4; x++) {
+          if (x < 3 && grid[y][x] === grid[y][x + 1]) return true;
+          if (y < 3 && grid[y][x] === grid[y + 1][x]) return true;
+        }
+        return false;
+      }
+
+      function contains2048() {
+        return grid.some(function (row) { return row.some(function (n) { return n >= 2048; }); });
+      }
+
+      function move(direction) {
+        if (overlay.classList.contains('show')) return;
+        var before = cloneGrid(grid);
+        var beforeScore = score;
+        var gained = 0;
+        var next = emptyGrid();
+        var i, j, result, line;
+
+        if (direction === 'left' || direction === 'right') {
+          for (i = 0; i < 4; i++) {
+            line = grid[i].slice();
+            if (direction === 'right') line.reverse();
+            result = slideLine(line);
+            if (direction === 'right') result.line.reverse();
+            next[i] = result.line;
+            gained += result.gained;
+          }
+        } else {
+          for (i = 0; i < 4; i++) {
+            line = [];
+            for (j = 0; j < 4; j++) line.push(grid[j][i]);
+            if (direction === 'down') line.reverse();
+            result = slideLine(line);
+            if (direction === 'down') result.line.reverse();
+            for (j = 0; j < 4; j++) next[j][i] = result.line[j];
+            gained += result.gained;
+          }
+        }
+
+        if (gridsEqual(before, next)) {
+          statusEl.textContent = 'That direction is blocked — try another.';
+          return;
+        }
+
+        previous = { grid: before, score: beforeScore };
+        grid = next;
+        score += gained;
+        addRandomTile();
+        render(gained ? 'Nice — <strong>+' + formatNumber(gained) + '</strong> points.' : 'Keep building.');
+
+        if (!hasWon && contains2048()) {
+          hasWon = true;
+          showResult(true);
+        } else if (!canMove()) {
+          showResult(false);
+        }
+      }
+
+      function showResult(won) {
+        resultTitle.textContent = won ? 'You made 2048!' : 'Game over';
+        resultText.textContent = won ? 'You reached the goal with ' + formatNumber(score) + ' points. Want to keep climbing?' : 'No more moves. You scored ' + formatNumber(score) + ' points.';
+        continueBtn.style.display = won ? '' : 'none';
+        overlay.classList.add('show');
+        (won ? continueBtn : restartBtn).focus();
+      }
+
+      function undo() {
+        if (!previous) return;
+        grid = cloneGrid(previous.grid);
+        score = previous.score;
+        previous = null;
+        overlay.classList.remove('show');
+        render('Last move undone.');
+        boardWrap.focus({preventScroll:true});
+      }
+
+      document.addEventListener('keydown', function (event) {
+        var directions = {ArrowLeft:'left', ArrowRight:'right', ArrowUp:'up', ArrowDown:'down'};
+        if (directions[event.key]) {
+          event.preventDefault();
+          move(directions[event.key]);
+        }
+      }, {passive:false});
+
+      boardWrap.addEventListener('touchstart', function (event) {
+        if (!event.touches.length) return;
+        touchStart = {x:event.touches[0].clientX, y:event.touches[0].clientY};
+      }, {passive:true});
+
+      boardWrap.addEventListener('touchmove', function (event) {
+        if (touchStart) event.preventDefault();
+      }, {passive:false});
+
+      boardWrap.addEventListener('touchend', function (event) {
+        if (!touchStart || !event.changedTouches.length) return;
+        var dx = event.changedTouches[0].clientX - touchStart.x;
+        var dy = event.changedTouches[0].clientY - touchStart.y;
+        touchStart = null;
+        if (Math.max(Math.abs(dx), Math.abs(dy)) < 24) return;
+        if (Math.abs(dx) > Math.abs(dy)) move(dx > 0 ? 'right' : 'left');
+        else move(dy > 0 ? 'down' : 'up');
+      }, {passive:true});
+
+      boardWrap.addEventListener('touchcancel', function () { touchStart = null; }, {passive:true});
+      undoBtn.addEventListener('click', undo);
+      newBtn.addEventListener('click', startGame);
+      restartBtn.addEventListener('click', startGame);
+      continueBtn.addEventListener('click', function () {
+        keepPlaying = true;
+        overlay.classList.remove('show');
+        render('Goal reached — keep going for a higher tile.');
+        boardWrap.focus({preventScroll:true});
+      });
+
+      startGame();
+    }());
+  </script>
+</body>
+</html>
