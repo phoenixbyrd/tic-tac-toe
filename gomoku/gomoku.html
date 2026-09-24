@@ -306,11 +306,23 @@
       align-self: center;
       margin: 0;
     }
+    /* Multiplayer: the back button sits at the top-left of the page, above the intro. */
+    .page:has(> .back-btn:first-child) { align-content: center; row-gap: 24px; }
+    .page > .back-btn:first-child { grid-column: 1 / -1; }
+    .page.playing .game-panel,
+    .page.playing .panel { grid-column: 1 / -1; }
+    @media (max-width: 600px) {
+      .page.playing { display: flex; flex-direction: column; }
+      .page.playing > .back-btn:first-child { margin-top: max(10px, env(safe-area-inset-top)); }
+      .page.playing .game-panel,
+      .page.playing .panel { flex: 1 0 auto; min-height: 0; width: 100%; }
+    }
 
 </style>
 </head>
 <body>
   <main class="page" id="page">
+    <a class="back-btn" href="../" aria-label="Back to all games">&#8592;</a>
     <section class="intro" id="intro" aria-labelledby="title">
       <div class="title-row"><span class="rule-mark" aria-hidden="true"></span><h1 id="title">Gomoku</h1></div>
       <p class="lede">Claim five intersections in a row before your opponent. Create a room, send the code, and play live from two phones or browsers.</p>
@@ -329,7 +341,6 @@
     </section>
 
     <section class="game-panel" aria-label="Game area">
-      <a class="back-btn" href="../" aria-label="Back to all games">&#8592;</a>
       <div class="lobby-art" id="lobbyArt">
         <div class="mini-board" aria-hidden="true">
           <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>

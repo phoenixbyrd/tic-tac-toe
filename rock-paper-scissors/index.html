@@ -374,11 +374,23 @@
       align-self: center;
       margin: 0;
     }
+    /* Multiplayer: the back button sits at the top-left of the page, above the intro. */
+    .page:has(> .back-btn:first-child) { align-content: center; row-gap: 24px; }
+    .page > .back-btn:first-child { grid-column: 1 / -1; }
+    .page.playing .game-panel,
+    .page.playing .panel { grid-column: 1 / -1; }
+    @media (max-width: 600px) {
+      .page.playing { display: flex; flex-direction: column; }
+      .page.playing > .back-btn:first-child { margin-top: max(10px, env(safe-area-inset-top)); }
+      .page.playing .game-panel,
+      .page.playing .panel { flex: 1 0 auto; min-height: 0; width: 100%; }
+    }
 
 </style>
 </head>
 <body>
   <main class="page" id="page">
+    <a class="back-btn" href="../" aria-label="Back to all games">&#8592;</a>
     <section class="intro" id="intro" aria-labelledby="headline">
       <p class="kicker">Two players · best of rounds</p>
       <h1 id="headline">One, two, shoot.</h1>
@@ -399,7 +411,6 @@
     </section>
 
     <section class="game-panel" aria-live="polite">
-      <a class="back-btn" href="../" aria-label="Back to all games">&#8592;</a>
       <div class="lobby-art" id="lobbyArt">
         <div class="symbol-stack" aria-hidden="true">
           <span class="art-symbol rock"><svg viewBox="0 0 64 64"><path d="M17 39V25c0-3 2-5 5-5s5 2 5 5v7-13c0-3 2-5 5-5s5 2 5 5v12-9c0-3 2-5 5-5s5 2 5 5v11-7c0-3 2-5 5-5s5 2 5 5v14c0 12-8 20-20 20S17 51 17 39Z"/><path d="M17 34c-5-3-9-1-9 3 0 3 3 8 9 13"/></svg></span>
