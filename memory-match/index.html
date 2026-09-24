@@ -335,11 +335,42 @@
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
     }
-  </style>
+      /* Back button returning to the game hub. */
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      justify-self: start;
+      align-self: flex-start;
+      flex: none;
+      width: 42px;
+      height: 42px;
+      margin: 10px 0 0 10px;
+      border-radius: 50%;
+      border: 1px solid rgba(128, 128, 128, 0.45);
+      background: rgba(128, 128, 128, 0.14);
+      color: inherit;
+      font-size: 24px;
+      line-height: 1;
+      text-decoration: none;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    .back-btn:visited { color: inherit; }
+    .back-btn:active { transform: scale(0.93); }
+    .topline > .back-btn:first-child,
+    .game-head > .back-btn:first-child {
+      align-self: center;
+      margin: 0;
+    }
+
+</style>
 </head>
 <body>
   <main class="app">
     <header class="game-head">
+      <a class="back-btn" href="../" aria-label="Back to all games">&#8592;</a>
       <div>
         <h1>Find every pair.</h1>
         <p class="subline">Turn over two cards at a time.</p>

@@ -245,7 +245,37 @@
         padding-bottom: max(20px, env(safe-area-inset-bottom));
       }
     }
-  </style>
+      /* Back button returning to the game hub. */
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      justify-self: start;
+      align-self: flex-start;
+      flex: none;
+      width: 42px;
+      height: 42px;
+      margin: 10px 0 0 10px;
+      border-radius: 50%;
+      border: 1px solid rgba(128, 128, 128, 0.45);
+      background: rgba(128, 128, 128, 0.14);
+      color: inherit;
+      font-size: 24px;
+      line-height: 1;
+      text-decoration: none;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    .back-btn:visited { color: inherit; }
+    .back-btn:active { transform: scale(0.93); }
+    .topline > .back-btn:first-child,
+    .game-head > .back-btn:first-child {
+      align-self: center;
+      margin: 0;
+    }
+
+</style>
 </head>
 <body>
   <main class="page" id="page">
@@ -264,6 +294,7 @@
     </section>
 
     <section class="game-panel" aria-live="polite">
+      <a class="back-btn" href="../" aria-label="Back to all games">&#8592;</a>
       <div class="lobby-art" id="lobbyArt">
         <div class="mini-board" id="miniBoard" aria-hidden="true"></div>
         <div><strong>Four by four. Forty lines.</strong><p>Every completed box is one point.</p></div>
