@@ -211,19 +211,39 @@
     @media (max-width: 440px) {
       .join-row { grid-template-columns: 1fr; }
       .join-row .secondary { width: 100%; }
-      .game-panel { padding: 14px; border-radius: 11px; }
-      .game-head { grid-template-columns: 1fr; gap: 10px; }
+      .game-panel { padding: 18px; border-radius: 11px; min-height: calc(100svh - 40px); display: flex; flex-direction: column; justify-content: space-evenly; }
+      .game-head { grid-template-columns: 1fr; gap: 12px; }
       .room-actions { justify-content: space-between; }
-      .room small { font-size: .7rem; }
-      .room-code { font-size: .84rem; }
-      .score { padding: 8px; gap: 6px; }
+      .share-btn { min-height: 52px; padding: 0 20px; font-size: 1rem; }
+      .room small { font-size: .78rem; }
+      .room-code { font-size: 1rem; }
+      .status { font-size: 1.75rem; }
+      .substatus { font-size: 1rem; }
+      .score { padding: 12px 10px; gap: 6px; font-size: 1.05rem; }
       .round { padding-inline: 8px; }
       .board-shell { padding: 7px; }
       .box { margin: 2px; }
       .game-actions { grid-template-columns: 1fr; margin-top: 18px; }
+      .game-actions .primary, .game-actions .secondary { min-height: 58px; font-size: 1.05rem; }
     }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+    }
+  
+    /* Full-bleed game screen on phones: the panel becomes the whole screen, like a native app. */
+    @media (max-width: 600px) {
+      .page { padding-left: 0; padding-right: 0; }
+      .page > .intro { padding-left: 20px; padding-right: 20px; }
+      .game-panel {
+        width: 100%; max-width: none; margin-left: 0; margin-right: 0;
+        border-left: 0; border-right: 0; border-radius: 0; box-shadow: none;
+      }
+      .page.playing { display: block; padding: 0; }
+      .page.playing .game-panel {
+        width: 100%; min-height: 100svh; min-height: 100dvh; border: 0; border-radius: 0;
+        padding-top: max(20px, env(safe-area-inset-top));
+        padding-bottom: max(20px, env(safe-area-inset-bottom));
+      }
     }
   </style>
 </head>
@@ -345,7 +365,7 @@
           socket.binaryType = "arraybuffer";
           socket.onopen = function () { send(connectPacket()); reconnectTries = 0; };
           socket.onmessage = function (e) { receive(new Uint8Array(e.data)); };
-          socket.onerror = function () { if (!isRetry) showError("Could’t reach the game relay. Check your connection and try again."); };
+          socket.onerror = function () { if (!isRetry) showError("Couldn’t reach the game relay. Check your connection and try again."); };
           socket.onclose = onSocketClose;
         } catch (e) { if (!isRetry) showError("This browser couldn’t open the game relay."); else onSocketClose(); }
       }

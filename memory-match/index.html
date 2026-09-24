@@ -292,11 +292,11 @@
     }
 
     @media (max-width: 480px) {
-      .app { padding-top: max(18px, env(safe-area-inset-top)); }
+      .app { padding-top: max(18px, env(safe-area-inset-top)); min-height: 100svh; display: flex; flex-direction: column; justify-content: space-evenly; }
       .game-head { align-items: center; gap: 10px; margin-bottom: 12px; }
-      h1 { font-size: clamp(2.15rem, 12vw, 3.25rem); max-width: 7ch; }
-      .subline { font-size: .83rem; }
-      .new-game { min-width: 48px; width: 48px; padding: 0; font-size: 0; }
+      h1 { font-size: clamp(2.6rem, 14vw, 3.6rem); max-width: 7ch; }
+      .subline { font-size: .95rem; }
+      .new-game { min-width: 60px; width: 60px; min-height: 60px; padding: 0; font-size: 0; }
       .new-game::before {
         content: "";
         display: block;
@@ -318,11 +318,12 @@
       }
       .new-game { position: relative; }
       .score-strip { margin-bottom: 12px; }
-      .stat { padding: 10px 6px; }
-      .stat + .stat::before { top: 10px; bottom: 10px; }
-      .stat-value { font-size: 1.12rem; }
-      .board { gap: 8px; }
-      .message { margin-top: 12px; }
+      .stat { padding: 14px 6px; }
+      .stat + .stat::before { top: 14px; bottom: 14px; }
+      .stat-label { font-size: .8rem; }
+      .stat-value { font-size: 1.5rem; }
+      .board { gap: 10px; }
+      .message { margin-top: 12px; font-size: 1.05rem; }
     }
 
     @media (max-width: 350px) {

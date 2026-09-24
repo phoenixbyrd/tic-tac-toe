@@ -329,7 +329,7 @@
           repeating-linear-gradient(0deg, transparent 0 27px, color-mix(in srgb, var(--rule) 36%, transparent) 28px),
           var(--paper);
       }
-      .page { width: min(100% - 24px, 560px); padding-top: 18px; }
+      .page { width: min(100% - 24px, 560px); padding-top: 18px; min-height: 100svh; display: flex; flex-direction: column; justify-content: space-evenly; }
       .topline { margin-left: 18px; }
       .round-meta .dot, .round-label { display: none; }
       .game-grid {
@@ -349,8 +349,8 @@
       .lives-label { width: 100%; }
       h1 { margin-top: 8px; }
       .word { margin-top: 30px; gap: 10px 7px; }
-      .keyboard { grid-template-columns: repeat(7, 1fr); gap: 8px 6px; }
-      .key { min-height: 44px; }
+      .keyboard { grid-template-columns: repeat(7, 1fr); gap: 9px 7px; }
+      .key { min-height: 56px; font-size: 1.02rem; }
     }
 
     @media (max-width: 390px) {
@@ -358,12 +358,12 @@
       .topline, .game-grid { margin-left: 14px; }
       .topline { gap: 10px; }
       .round-meta { font-size: .72rem; gap: 8px; }
-      .new-game { padding-inline: 13px; }
+      .new-game { padding-inline: 18px; min-height: 52px; font-size: 1rem; }
       .figure-column { grid-template-columns: 112px 1fr; gap: 12px; }
-      .letter-slot { width: min(31px, calc((100vw - 76px) / 8)); height: 44px; font-size: 1.55rem; }
+      .letter-slot { width: min(36px, calc((100vw - 76px) / 8)); height: 52px; font-size: 1.8rem; }
       .word { gap: 8px 5px; }
       .keyboard { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 7px 5px; }
-      .key { min-height: 42px; border-radius: 6px; font-size: .84rem; }
+      .key { min-height: 52px; border-radius: 6px; font-size: .95rem; }
       .result { align-items: flex-start; flex-direction: column; }
       .again { width: 100%; }
     }
