@@ -63,6 +63,22 @@
     @media(max-width:620px){.panel{padding:14px;border-radius:8px}.battle-layout{grid-template-columns:1fr}.battle-layout .grid-shell:first-child{order:0}.battle-layout .grid-shell:last-child{order:1;padding-top:10px;border-top:1px solid var(--sea-line)}.fleet-card{grid-template-columns:1fr}.game-head{grid-template-columns:1fr auto}.status{font-size:1.45rem}.game-actions{grid-template-columns:1fr}.grid-labels{grid-template-columns:18px repeat(10,1fr)}.board-row{grid-template-columns:18px 1fr}}
     @media(max-width:430px){.join-row{grid-template-columns:1fr}.join-row .secondary{width:100%}.panel{margin-inline:0;min-height:calc(100svh - 36px);justify-content:space-evenly;padding:16px}.page{padding-inline:12px}.game-head{grid-template-columns:1fr;gap:12px}.room-actions{justify-content:space-between}.share-btn{min-height:52px;padding:0 20px;font-size:1rem}.status{font-size:1.75rem}.substatus{font-size:1rem}.room small{font-size:.78rem}.room-code{font-size:1rem}.phase-title{align-items:start;flex-direction:column;gap:4px}.fleet-list{gap:9px}.primary,.secondary{min-height:58px;font-size:1.05rem}.cell.hit:before,.cell.hit:after{height:10%}}
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}}
+  
+    /* Full-bleed game screen on phones: the panel becomes the whole screen, like a native app. */
+    @media (max-width: 600px) {
+      .page { padding-left: 0; padding-right: 0; }
+      .page > .intro { padding-left: 20px; padding-right: 20px; }
+      .panel {
+        width: 100%; max-width: none; margin-left: 0; margin-right: 0;
+        border-left: 0; border-right: 0; border-radius: 0; box-shadow: none;
+      }
+      .page.playing { display: block; padding: 0; }
+      .page.playing .panel {
+        width: 100%; min-height: 100svh; min-height: 100dvh; border: 0; border-radius: 0;
+        padding-top: max(20px, env(safe-area-inset-top));
+        padding-bottom: max(20px, env(safe-area-inset-bottom));
+      }
+    }
   </style>
 </head>
 <body>

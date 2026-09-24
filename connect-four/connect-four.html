@@ -236,6 +236,22 @@
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
     }
+  
+    /* Full-bleed game screen on phones: the panel becomes the whole screen, like a native app. */
+    @media (max-width: 600px) {
+      .page { padding-left: 0; padding-right: 0; }
+      .page > .intro { padding-left: 20px; padding-right: 20px; }
+      .game-panel {
+        width: 100%; max-width: none; margin-left: 0; margin-right: 0;
+        border-left: 0; border-right: 0; border-radius: 0; box-shadow: none;
+      }
+      .page.playing { display: block; padding: 0; }
+      .page.playing .game-panel {
+        width: 100%; min-height: 100svh; min-height: 100dvh; border: 0; border-radius: 0;
+        padding-top: max(20px, env(safe-area-inset-top));
+        padding-bottom: max(20px, env(safe-area-inset-bottom));
+      }
+    }
   </style>
 </head>
 <body>
@@ -357,7 +373,7 @@
           socket.binaryType = "arraybuffer";
           socket.onopen = function () { send(connectPacket()); reconnectTries = 0; };
           socket.onmessage = function (e) { receive(new Uint8Array(e.data)); };
-          socket.onerror = function () { if (!isRetry) showError("Could’t reach the game relay. Check your connection and try again."); };
+          socket.onerror = function () { if (!isRetry) showError("Couldn’t reach the game relay. Check your connection and try again."); };
           socket.onclose = onSocketClose;
         } catch (e) { if (!isRetry) showError("This browser couldn’t open the game relay."); else onSocketClose(); }
       }
